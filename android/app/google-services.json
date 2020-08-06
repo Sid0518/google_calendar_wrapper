@@ -1,0 +1,48 @@
+{
+  "project_info": {
+    "project_number": "72792558559",
+    "firebase_url": "https://trans-dynamics-285521.firebaseio.com",
+    "project_id": "trans-dynamics-285521",
+    "storage_bucket": "trans-dynamics-285521.appspot.com"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:72792558559:android:6212495b27ad2db8afd26a",
+        "android_client_info": {
+          "package_name": "com.example.google_calendar_wrapper"
+        }
+      },
+      "oauth_client": [
+        {
+          "client_id": "72792558559-3p1orai6mbsm90obnld3nsjpd3ul3j2o.apps.googleusercontent.com",
+          "client_type": 1,
+          "android_info": {
+            "package_name": "com.example.google_calendar_wrapper",
+            "certificate_hash": "3a39b0e8fc28a11672eb3174d446394d1fd5dbaf"
+          }
+        },
+        {
+          "client_id": "72792558559-6nmhu5ji9uva8ssentln8iaaqhg34kfc.apps.googleusercontent.com",
+          "client_type": 3
+        }
+      ],
+      "api_key": [
+        {
+          "current_key": "AIzaSyBsXOW1dJTMJH0-VwVNGeecUf_F5M4Ht08"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": [
+            {
+              "client_id": "72792558559-6nmhu5ji9uva8ssentln8iaaqhg34kfc.apps.googleusercontent.com",
+              "client_type": 3
+            }
+          ]
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}
