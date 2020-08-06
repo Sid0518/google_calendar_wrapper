@@ -14,19 +14,10 @@ class _HomePageState extends State<HomePage> {
   final googleSignIn = GoogleSignIn(
     scopes: scopes
   );
-  String text = 'Trying to log in...';
+  Events events = Events();
 
   Future<void> login() async {
-    this.googleSignIn.signIn()
-      .then((value) => 
-        setState(() =>
-          this.text = 
-            'Signed in as ${this.googleSignIn.currentUser.displayName}'
-        )
-      )
-      .catchError((error) => 
-        setState(() => this.text = error.toString())
-      );
+    await this.googleSignIn.signIn();
   }
 
   @override
@@ -45,14 +36,13 @@ class _HomePageState extends State<HomePage> {
       body: Center(
         child: Padding(
           padding: EdgeInsets.all(16),
-          child: Text(
-            this.text,
-            
-            style: TextStyle(
-              fontSize: 24,
-            ),
-            textAlign: TextAlign.center,
-          ),
+          child: ListView.separated(
+            itemCount: (this.events.items ?? []).length,
+            itemBuilder: (context, index) =>
+              EventWidget(event: this.events.items[index]),
+            separatorBuilder: (context, index) =>
+              SizedBox(height: 16),
+          )
         ),
       ),
 
@@ -63,19 +53,15 @@ class _HomePageState extends State<HomePage> {
           final httpClient = GoogleHttpClient(authHeaders);
 
           try {
-            Events events = await CalendarApi(httpClient)
+            this.events = await CalendarApi(httpClient)
               .events
               .list(
                 'primary', 
-                timeMin: DateTime.now()
-                .subtract(Duration(days: 30)).toUtc(),
+                // timeMin: DateTime.now()
+                // .subtract(Duration(days: 30)).toUtc(),
               );
-
-            final prettyPrinter = JsonEncoder.withIndent('  ');
-            events.items.forEach((event) {
-              print(event.summary);
-            });
-
+            
+            setState(() {});
           } catch(error) {
             print(error);
           }
