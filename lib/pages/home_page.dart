@@ -1,5 +1,6 @@
 import 'package:google_calendar_wrapper/helpers.dart';
 import 'package:google_calendar_wrapper/imports.dart';
+import 'package:google_calendar_wrapper/models/single_day_events_view.dart';
 
 const scopes = const [
   'email',
@@ -16,85 +17,103 @@ class _HomePageState extends State<HomePage> {
   Events events = Events();
   List<Event> listEvents = [];
 
-  Map<DateTime, List<Event>> sortedEvents = {};
+  Map<DateTime, List<Event>> sortedEvents;
 
   DateTime selectedDate;
 
   Future<void> login() async {
     await this.googleSignIn.signIn();
+    this.selectedDate = DateTime.now();
+    await this.updateEvents();
   }
 
   /// Updates events
   Future<void> updateEvents() async {
     try {
+      // Nullify sortedEvents and setState, so that progress indicator pops up
+      this.sortedEvents = null;
+      setState(() {});
+
       this.events =
-          await getEvents(this.googleSignIn.currentUser, selectedDate, 0, 3);
+          await getEvents(this.googleSignIn.currentUser, selectedDate, 30, 7);
       this.listEvents = filteredEvents(this.events);
       this.sortedEvents = sortEvents(listEvents);
+
       setState(() {});
     } catch (error) {
       print(error);
+      this.sortedEvents = {};
     }
   }
 
   /// Updates the date
   Future<void> updateDate(BuildContext context) async {
     DateTime newDate = await selectDate(context, selectedDate);
+
     if (newDate != null) {
       selectedDate = newDate;
-    }
-  }
 
-  List<Widget> createWidgets() {
-    List<Widget> finalList = [];
-    List<DateTime> dates = this.sortedEvents.keys.toList();
-    dates.sort();
-    for (DateTime dateTime in dates) {
-      finalList.add(Text(dateTime.toIso8601String()));
-      finalList.add(SizedBox(height: 16));
-      for (Event event in this.sortedEvents[dateTime]) {
-        finalList.add(EventWidget(event: event));
-        finalList.add(SizedBox(height: 16));
-      }
+      await this.updateEvents();
     }
-    return finalList;
   }
 
   @override
   void initState() {
     super.initState();
     this.login();
-    selectedDate = DateTime.now();
   }
 
   @override
   Widget build(BuildContext context) {
+    List<DateTime> dates;
+
+    if(this.sortedEvents != null) {
+      dates = this.sortedEvents.keys.toList();
+      dates.sort();
+    }
+
     return Scaffold(
         appBar: AppBar(
           title: Text('Calendar Wrapper'),
           actions: [
             IconButton(
                 icon: Icon(Icons.calendar_today),
-                onPressed: () async {
-                  await updateDate(context);
-                  updateEvents();
-                })
+                onPressed: () => this.updateDate(context)
+            ),
           ],
         ),
-        body: Center(
-          child: Padding(
-              padding: EdgeInsets.all(16),
-              child: ListView(
-                children: createWidgets(),
-              )),
-          // child: ListView.separated(
-          //   itemCount: (this.listEvents ?? []).length,
-          //   itemBuilder: (context, index) =>
-          //       EventWidget(event: this.listEvents[index]),
-          //   separatorBuilder: (context, index) => SizedBox(height: 16),
-          // )),
-        ),
+        body: dates != null ?
+          RefreshIndicator(
+            onRefresh: this.updateEvents,
+
+            child: ListView.separated(
+              itemCount: dates.length,
+              itemBuilder: (context, index) {
+                  DateTime date = dates[index];
+                  return SingleDayEventsView(
+                    date: date,
+                    events: this.sortedEvents[date]
+                  );
+              },
+              separatorBuilder: (context, index) =>
+                Divider(height: 8, thickness: 1, indent: 16, endIndent: 16),
+            ),
+          ) : 
+          Center(
+            child: CircularProgressIndicator(),
+          ),
+
         floatingActionButton: FloatingActionButton(
-            child: Icon(Icons.refresh), onPressed: updateEvents));
+            child: Icon(Icons.add), 
+            onPressed: () =>
+              showDialog(
+                context: context,
+
+                child: AlertDialog(
+                  title: Text('Adding to Todo not yet implemented'),
+                )
+              )
+        )
+    );
   }
 }
