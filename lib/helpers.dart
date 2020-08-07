@@ -12,8 +12,10 @@ Future<DateTime> selectDate(BuildContext context, DateTime initialDate) async {
   final DateTime picked = await showDatePicker(
       context: context,
       initialDate: initialDate,
-      firstDate: DateTime.now().subtract(Duration(days: 30)),
-      lastDate: DateTime.now().add(Duration(days: 30)));
+      
+      firstDate: DateTime.now().subtract(Duration(days: 365 * 5)),
+      lastDate: DateTime.now().add(Duration(days: 365 * 5))
+  );
   return picked;
 }
 

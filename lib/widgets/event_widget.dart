@@ -60,6 +60,7 @@ class _EventWidgetState extends State<EventWidget>
       vsync: this,
       duration: Duration(milliseconds: 200),
       curve: Curves.decelerate,
+      
       child: InkWell(
         onTap: () {},
         child: Container(
@@ -105,17 +106,26 @@ class _EventWidgetState extends State<EventWidget>
                     crossAxisAlignment: CrossAxisAlignment.start,
                     
                     children: <Widget>[
-                      Text(
-                        '${widget.event.summary ?? 'No name'}',
-                        maxLines: 1,
-                        overflow: TextOverflow.ellipsis,
-                        
-                        style: TextStyle(
-                            fontSize: 20,
-                            color: Colors.white,
-                            decoration: widget.checked
-                                ? TextDecoration.lineThrough
-                                : TextDecoration.none),
+                      Stack(
+                        children: <Widget>[
+                          AnimatedPositioned(
+                            duration: Duration(milliseconds: 200),
+                            curve: Curves.decelerate,
+      
+                            child: Text(
+                              '${widget.event.summary ?? 'No name'}',
+                              maxLines: 1,
+                              overflow: TextOverflow.ellipsis,
+                              
+                              style: TextStyle(
+                                  fontSize: 20,
+                                  color: Colors.white,
+                                  decoration: widget.checked
+                                      ? TextDecoration.lineThrough
+                                      : TextDecoration.none),
+                            ),
+                          ),
+                        ],
                       ),
 
                       if (!widget.checked) SizedBox(height: 16),

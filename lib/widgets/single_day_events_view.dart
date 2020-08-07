@@ -9,20 +9,24 @@ class SingleDayEventsView extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Padding(
-      padding: EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+      padding: EdgeInsets.all(16),
       
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
 
         children: <Widget>[
-          Text(
-            DateFormat('EEEE, MMM d, y').format(this.date),
-            style: TextStyle(
-              fontSize: 18
+          Padding(
+            padding: EdgeInsets.symmetric(horizontal: 16),
+
+            child: Text(
+              DateFormat('EEEE, MMM d, y').format(this.date),
+              style: TextStyle(
+                fontSize: 18
+              ),
             ),
           ),
 
-          SizedBox(height: 8),
+          SizedBox(height: 16),
           
           ListView.builder(
             shrinkWrap: true,
