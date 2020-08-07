@@ -16,6 +16,8 @@ class _HomePageState extends State<HomePage> {
   Events events = Events();
   List<Event> listEvents = [];
 
+  Map<DateTime, List<Event>> sortedEvents = {};
+
   DateTime selectedDate;
 
   Future<void> login() async {
@@ -26,8 +28,9 @@ class _HomePageState extends State<HomePage> {
   Future<void> updateEvents() async {
     try {
       this.events =
-          await getEvents(this.googleSignIn.currentUser, selectedDate, 0, 1);
+          await getEvents(this.googleSignIn.currentUser, selectedDate, 0, 3);
       this.listEvents = filteredEvents(this.events);
+      this.sortedEvents = sortEvents(listEvents);
       setState(() {});
     } catch (error) {
       print(error);
@@ -40,6 +43,21 @@ class _HomePageState extends State<HomePage> {
     if (newDate != null) {
       selectedDate = newDate;
     }
+  }
+
+  List<Widget> createWidgets() {
+    List<Widget> finalList = [];
+    List<DateTime> dates = this.sortedEvents.keys.toList();
+    dates.sort();
+    for (DateTime dateTime in dates) {
+      finalList.add(Text(dateTime.toIso8601String()));
+      finalList.add(SizedBox(height: 16));
+      for (Event event in this.sortedEvents[dateTime]) {
+        finalList.add(EventWidget(event: event));
+        finalList.add(SizedBox(height: 16));
+      }
+    }
+    return finalList;
   }
 
   @override
@@ -57,8 +75,8 @@ class _HomePageState extends State<HomePage> {
           actions: [
             IconButton(
                 icon: Icon(Icons.calendar_today),
-                onPressed: () {
-                  updateDate(context);
+                onPressed: () async {
+                  await updateDate(context);
                   updateEvents();
                 })
           ],
@@ -66,12 +84,15 @@ class _HomePageState extends State<HomePage> {
         body: Center(
           child: Padding(
               padding: EdgeInsets.all(16),
-              child: ListView.separated(
-                itemCount: (this.listEvents ?? []).length,
-                itemBuilder: (context, index) =>
-                    EventWidget(event: this.listEvents[index]),
-                separatorBuilder: (context, index) => SizedBox(height: 16),
+              child: ListView(
+                children: createWidgets(),
               )),
+          // child: ListView.separated(
+          //   itemCount: (this.listEvents ?? []).length,
+          //   itemBuilder: (context, index) =>
+          //       EventWidget(event: this.listEvents[index]),
+          //   separatorBuilder: (context, index) => SizedBox(height: 16),
+          // )),
         ),
         floatingActionButton: FloatingActionButton(
             child: Icon(Icons.refresh), onPressed: updateEvents));

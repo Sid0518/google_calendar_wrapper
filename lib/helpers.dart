@@ -12,8 +12,8 @@ Future<DateTime> selectDate(BuildContext context, DateTime initialDate) async {
   final DateTime picked = await showDatePicker(
       context: context,
       initialDate: initialDate,
-      firstDate: DateTime.now().subtract(Duration(days: 365 * 5)),
-      lastDate: DateTime.now().add(Duration(days: 365 * 5)));
+      firstDate: initialDate.subtract(Duration(days: 30)),
+      lastDate: DateTime.now().add(Duration(days: 30)));
   return picked;
 }
 
@@ -29,14 +29,14 @@ DateTime resetDate(DateTime selectedDate) {
 
 /// Gets all events for a user within a specific date range
 Future<Events> getEvents(GoogleSignInAccount currentUser, DateTime selectedDate,
-    int daysForward, int daysBackward) async {
+    int daysBackward, int daysForward) async {
   DateTime resettedDate = resetDate(selectedDate);
   final authHeaders = await currentUser.authHeaders;
   final httpClient = GoogleHttpClient(authHeaders);
   Events newEvents = await CalendarApi(httpClient).events.list(
         'primary',
-        timeMin: resettedDate.subtract(Duration(days: daysForward)).toUtc(),
-        timeMax: resettedDate.add(Duration(days: daysBackward)).toUtc(),
+        timeMin: resettedDate.subtract(Duration(days: daysBackward)).toUtc(),
+        timeMax: resettedDate.add(Duration(days: daysForward)).toUtc(),
       );
   return newEvents;
 }
@@ -52,4 +52,22 @@ List<Event> filteredEvents(Events events) {
     }
   }
   return finalList;
+}
+
+/// Sorts events into a map with dates to events
+Map<DateTime, List<Event>> sortEvents(List<Event> events) {
+  Map<DateTime, List<Event>> outMap = {};
+  DateTime startResetDate;
+  for (Event event in events) {
+    startResetDate = resetDate(event.start.dateTime);
+    if (outMap.containsKey(startResetDate)) {
+      outMap[startResetDate].add(event);
+    } else {
+      outMap[startResetDate] = <Event>[event];
+    }
+  }
+  for (DateTime date in outMap.keys) {
+    outMap[date].sort((a, b) => a.start.dateTime.compareTo(b.start.dateTime));
+  }
+  return outMap;
 }
