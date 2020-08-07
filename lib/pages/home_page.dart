@@ -1,6 +1,4 @@
-import 'package:google_calendar_wrapper/helpers.dart';
 import 'package:google_calendar_wrapper/imports.dart';
-import 'package:google_calendar_wrapper/models/single_day_events_view.dart';
 
 const scopes = const [
   'email',
@@ -16,6 +14,7 @@ class _HomePageState extends State<HomePage> {
   final googleSignIn = GoogleSignIn(scopes: scopes);
   Events events = Events();
   List<Event> listEvents = [];
+  RangeValues dateRange = RangeValues(-30, 7);
 
   Map<DateTime, List<Event>> sortedEvents;
 
@@ -35,7 +34,12 @@ class _HomePageState extends State<HomePage> {
       setState(() {});
 
       this.events =
-          await getEvents(this.googleSignIn.currentUser, selectedDate, 30, 7);
+          await getEvents(
+            this.googleSignIn.currentUser, 
+            this.selectedDate, 
+            this.dateRange.start.round().abs(),
+            this.dateRange.end.round().abs()
+          );
       this.listEvents = filteredEvents(this.events);
       this.sortedEvents = sortEvents(listEvents);
 
@@ -48,13 +52,76 @@ class _HomePageState extends State<HomePage> {
 
   /// Updates the date
   Future<void> updateDate(BuildContext context) async {
-    DateTime newDate = await selectDate(context, selectedDate);
+    DateTime newDate = await selectDate(context, this.selectedDate);
 
     if (newDate != null) {
-      selectedDate = newDate;
+      this.selectedDate = newDate;
 
       await this.updateEvents();
     }
+  }
+
+  Future<void> showSlider(context) async {
+    RangeValues selectedRange;
+
+    await showDialog(
+      context: context,
+
+      child: AlertDialog(
+        shape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.circular(16)
+        ),
+
+        title: Text('Select range of dates: '),
+        content: Container(
+          constraints: BoxConstraints(
+            maxHeight: 40,
+          ),
+          
+          child: DateRangeSlider(
+            initialValues: this.dateRange,
+            min: -30,
+            max: 30,
+            onChangedCallback: (RangeValues values) => 
+              selectedRange = values,
+          ),
+        ),
+
+        actions: [
+          FlatButton(
+            child: Text(
+              'CONFIRM',
+              
+              style: TextStyle(
+                fontWeight: FontWeight.bold,
+                color: Theme.of(context).primaryColor
+              ),
+            ),
+
+            onPressed: () async {
+              this.dateRange = selectedRange;
+              Navigator.pop(context);
+
+              await this.updateEvents();
+            }
+          ),
+
+          FlatButton(
+            child: Text(
+              'CANCEL',
+
+              style: TextStyle(
+                fontWeight: FontWeight.bold,
+                color: Theme.of(context).accentColor
+              ),
+            ),
+
+            onPressed: () =>
+              Navigator.pop(context)
+          ),
+        ],
+      )
+    );
   }
 
   @override
@@ -79,6 +146,11 @@ class _HomePageState extends State<HomePage> {
             IconButton(
                 icon: Icon(Icons.calendar_today),
                 onPressed: () => this.updateDate(context)
+            ),
+
+            IconButton(
+                icon: Icon(Icons.av_timer),
+                onPressed: () => this.showSlider(context)
             ),
           ],
         ),
