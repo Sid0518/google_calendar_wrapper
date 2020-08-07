@@ -12,7 +12,7 @@ Future<DateTime> selectDate(BuildContext context, DateTime initialDate) async {
   final DateTime picked = await showDatePicker(
       context: context,
       initialDate: initialDate,
-      firstDate: initialDate.subtract(Duration(days: 30)),
+      firstDate: DateTime.now().subtract(Duration(days: 30)),
       lastDate: DateTime.now().add(Duration(days: 30)));
   return picked;
 }
@@ -45,7 +45,7 @@ Future<Events> getEvents(GoogleSignInAccount currentUser, DateTime selectedDate,
 List<Event> filteredEvents(Events events) {
   List<Event> finalList = [];
   for (Event event in events.items) {
-    if (event.start != null || event.end != null) {
+    if (event.start != null && event.end != null && event.start.dateTime != null && event.end.dateTime != null) {
       finalList.add(event);
     } else {
       // print(event.summary);
