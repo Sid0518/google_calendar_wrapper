@@ -30,46 +30,59 @@ DateTime resetDate(DateTime selectedDate) {
 }
 
 /// Gets all events for a user within a specific date range
-Future<Events> getEvents(GoogleSignInAccount currentUser, DateTime selectedDate,
-    int daysBackward, int daysForward) async {
-  DateTime resettedDate = resetDate(selectedDate);
+Future<Events> getEvents(
+  GoogleSignInAccount currentUser, 
+  DateTime selectedDate,
+  int daysBackward, 
+  int daysForward,
+) async {
   final authHeaders = await currentUser.authHeaders;
   final httpClient = GoogleHttpClient(authHeaders);
-  Events newEvents = await CalendarApi(httpClient).events.list(
-        'primary',
-        timeMin: resettedDate.subtract(Duration(days: daysBackward)).toUtc(),
-        timeMax: resettedDate.add(Duration(days: daysForward)).toUtc(),
-      );
-  return newEvents;
-}
+  
+  DateTime resettedDate = resetDate(selectedDate);
+  Events newEvents = await CalendarApi(httpClient)
+    .events
+    .list(
+      'primary',
+      timeMin: resettedDate.subtract(Duration(days: daysBackward)).toUtc(),
+      timeMax: resettedDate.add(Duration(days: daysForward)).toUtc(),
+    );
 
-/// Takes Events object and returns all valid events as some events have null endTime
-List<Event> filteredEvents(Events events) {
-  List<Event> finalList = [];
-  for (Event event in events.items) {
-    if (event.start != null && event.end != null && event.start.dateTime != null && event.end.dateTime != null) {
-      finalList.add(event);
-    } else {
-      // print(event.summary);
-    }
-  }
-  return finalList;
+  return newEvents;
 }
 
 /// Sorts events into a map with dates to events
 Map<DateTime, List<Event>> sortEvents(List<Event> events) {
   Map<DateTime, List<Event>> outMap = {};
-  DateTime startResetDate;
+
   for (Event event in events) {
-    startResetDate = resetDate(event.start.dateTime);
-    if (outMap.containsKey(startResetDate)) {
-      outMap[startResetDate].add(event);
-    } else {
-      outMap[startResetDate] = <Event>[event];
+    // If event is full-day event
+    if(event.start.dateTime == null) {
+      event.start.dateTime = event.start.date;
+      event.end.dateTime = event.end.date;
     }
+
+    event.start.dateTime = event.start.dateTime.toLocal();
+    event.end.dateTime = event.end.dateTime.toLocal();
+
+    DateTime startResetDate = resetDate(event.start.dateTime);
+    DateTime endResetDate = resetDate(event.end.dateTime);
+
+    do {
+      if(outMap.containsKey(startResetDate))
+        outMap[startResetDate].add(event);
+      else
+        outMap[startResetDate] = <Event>[event];
+      
+      startResetDate = startResetDate.add(Duration(days: 1));
+    } 
+    while(!endResetDate.isBefore(startResetDate));
+    print('\n');
   }
-  for (DateTime date in outMap.keys) {
-    outMap[date].sort((a, b) => a.start.dateTime.compareTo(b.start.dateTime));
-  }
+
+  for (DateTime date in outMap.keys)
+    outMap[date]
+      .sort((a, b) => a.start.dateTime.compareTo(b.start.dateTime));
+
   return outMap;
 }

@@ -22,7 +22,7 @@ class _HomePageState extends State<HomePage> {
 
   Future<void> login() async {
     await this.googleSignIn.signIn();
-    this.selectedDate = DateTime.now();
+    this.selectedDate = resetDate(DateTime.now());
     await this.updateEvents();
   }
 
@@ -34,18 +34,19 @@ class _HomePageState extends State<HomePage> {
       setState(() {});
 
       this.events =
-          await getEvents(
-            this.googleSignIn.currentUser, 
-            this.selectedDate, 
-            this.dateRange.start.round().abs(),
-            this.dateRange.end.round().abs()
-          );
-      this.listEvents = filteredEvents(this.events);
-      this.sortedEvents = sortEvents(listEvents);
+        await getEvents(
+          this.googleSignIn.currentUser, 
+          this.selectedDate, 
+          this.dateRange.start.round().abs(),
+          this.dateRange.end.round().abs()
+        );
+      this.sortedEvents = sortEvents(this.events.items);
 
       setState(() {});
-    } catch (error) {
-      print(error);
+    } 
+    
+    catch (error) {
+      print(error);  
       this.sortedEvents = {};
     }
   }
@@ -55,7 +56,7 @@ class _HomePageState extends State<HomePage> {
     DateTime newDate = await selectDate(context, this.selectedDate);
 
     if (newDate != null) {
-      this.selectedDate = newDate;
+      this.selectedDate = resetDate(newDate);
 
       await this.updateEvents();
     }
@@ -99,7 +100,8 @@ class _HomePageState extends State<HomePage> {
             ),
 
             onPressed: () async {
-              this.dateRange = selectedRange;
+              if(selectedRange != null)
+                this.dateRange = selectedRange;
               Navigator.pop(context);
 
               await this.updateEvents();
