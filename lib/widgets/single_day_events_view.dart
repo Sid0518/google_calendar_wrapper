@@ -28,11 +28,11 @@ class SingleDayEventsView extends StatelessWidget {
 
           SizedBox(height: 16),
           
-          ListView.builder(
+          ListView.separated(
             shrinkWrap: true,
             scrollDirection: Axis.vertical,
             physics: NeverScrollableScrollPhysics(),
-
+            separatorBuilder: (context, index) => SizedBox(height: 8),
             itemCount: this.events.length,
             itemBuilder: (context, index) =>
               EventWidget(
