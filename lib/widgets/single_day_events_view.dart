@@ -4,7 +4,7 @@ class SingleDayEventsView extends StatelessWidget {
   final DateTime date;
   final List<Event> events;
 
-  SingleDayEventsView({this.date, this.events});
+  SingleDayEventsView({@required this.date, @required this.events});
 
   @override
   Widget build(BuildContext context) {
@@ -36,6 +36,7 @@ class SingleDayEventsView extends StatelessWidget {
             itemCount: this.events.length,
             itemBuilder: (context, index) =>
               EventWidget(
+                date: this.date,
                 event: this.events[index],
                 checked: false,
               )

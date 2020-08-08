@@ -5,7 +5,12 @@ class DateRangeSlider extends StatefulWidget {
   final double min;
   final double max;
   final Function onChangedCallback;
-  DateRangeSlider({this.initialValues, this.min, this.max, this.onChangedCallback});
+  DateRangeSlider({
+    @required this.initialValues, 
+    this.min = -30, 
+    this.max = 30, 
+    @required this.onChangedCallback
+  });
 
   @override
   _DateRangeSliderState createState() => _DateRangeSliderState();
