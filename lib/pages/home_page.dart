@@ -16,7 +16,7 @@ class _HomePageState extends State<HomePage> {
   List<Event> listEvents = [];
   RangeValues dateRange = RangeValues(-30, 7);
 
-  Map<DateTime, List<Event>> sortedEvents;
+  Map<DateTime, List<CustomEvent>> sortedEvents;
 
   DateTime selectedDate;
 

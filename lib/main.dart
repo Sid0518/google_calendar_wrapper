@@ -25,7 +25,6 @@ void main() async {
   db = await openDatabase(
     join(await getDatabasesPath(), 'events.db'),
     onCreate: (db, version) {
-      print('onCreate');
       db.execute(
         "CREATE TABLE events(_id INTEGER PRIMARY KEY AUTOINCREMENT, eventId TEXT, summary TEXT, description TEXT, colorId TEXT, start TEXT, end TEXT, checked INTEGER)",
       );

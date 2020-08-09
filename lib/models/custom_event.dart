@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:google_calendar_wrapper/imports.dart';
 
 class CustomEvent {
@@ -10,6 +12,9 @@ class CustomEvent {
   DateTime end;
 
   bool checked;
+  
+  StreamController _eventEmitter = StreamController.broadcast();
+  Stream get emitter => this._eventEmitter.stream;
 
   CustomEvent({
     this.summary = '', this.description = '', 
@@ -44,6 +49,13 @@ class CustomEvent {
     this.checked = map['checked'] == 1 ? true : false;
   }
 
+  void addToggleListener(Stream emitter) {
+    emitter.listen((event) {
+      if(event == 'Toggled with update')
+        this.toggle();
+    });
+  }
+
   Map<String, dynamic> toMap() {
     return {
       'eventId': this.id,
@@ -64,8 +76,15 @@ class CustomEvent {
     );
   }
 
-  Future<void> toggleChecked() async {
+  void toggle() {
     this.checked = !this.checked;
+    this._eventEmitter.add('Toggled');
+  }
+
+  Future<void> toggleWithUpdate() async {
+    this.checked = !this.checked;
+    this._eventEmitter.add('Toggled with update');
+
     await db.update(
       'events',
       {'checked': this.checked ? 1 : 0},

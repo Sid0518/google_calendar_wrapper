@@ -2,7 +2,7 @@ import 'package:google_calendar_wrapper/imports.dart';
 
 class SingleDayEventsView extends StatelessWidget {
   final DateTime date;
-  final List<Event> events;
+  final List<CustomEvent> events;
 
   SingleDayEventsView({@required this.date, @required this.events});
 
@@ -37,11 +37,7 @@ class SingleDayEventsView extends StatelessWidget {
             itemBuilder: (context, index) =>
               EventWidget(
                 date: this.date,
-                event: CustomEvent
-                  .fromEvent(
-                    event: this.events[index],
-                    checked: false,
-                  )
+                event: this.events[index],
               )
           )
         ],
