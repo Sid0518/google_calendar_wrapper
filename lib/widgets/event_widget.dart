@@ -16,6 +16,15 @@ class _EventWidgetState extends State<EventWidget>
   bool get checked => this.widget.event.checked;
 
   @override
+  void initState() {
+    this.widget.event.emitter.listen((event) {
+      if(event == 'Toggled' && this.mounted)
+        setState(() {});
+    });
+    super.initState();
+  }
+
+  @override
   Widget build(BuildContext context) {
     Color eventColor = colorFromHex(
       COLORS['event'][this.widget.event.colorId]['background']
@@ -74,7 +83,7 @@ class _EventWidgetState extends State<EventWidget>
       
       child: InkWell(
         onTap: () async {
-          await widget.event.toggleChecked();
+          await widget.event.toggleWithUpdate();
           setState(() {});
         },
         splashColor: Theme.of(context).primaryColor,
@@ -100,7 +109,7 @@ class _EventWidgetState extends State<EventWidget>
                     activeColor: Colors.white,
                     value: this.checked,
                     onChanged: (bool value) async {
-                      await widget.event.toggleChecked();
+                      await widget.event.toggleWithUpdate();
                       setState(() {});
                     },
                 ),
