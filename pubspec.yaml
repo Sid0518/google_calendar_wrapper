@@ -34,6 +34,9 @@ dependencies:
   google_sign_in:
 
   intl:
+  path:
+  sqflite:
+  uuid:
 
 dev_dependencies:
   flutter_test:

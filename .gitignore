@@ -266,3 +266,4 @@ fabric.properties
 !/gradle/wrapper/gradle-wrapper.jar
 
 # End of https://www.gitignore.io/api/android,flutter,androidstudio,visualstudiocode
+android/app/google-services.json
