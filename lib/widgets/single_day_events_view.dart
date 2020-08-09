@@ -37,8 +37,11 @@ class SingleDayEventsView extends StatelessWidget {
             itemBuilder: (context, index) =>
               EventWidget(
                 date: this.date,
-                event: this.events[index],
-                checked: false,
+                event: CustomEvent
+                  .fromEvent(
+                    event: this.events[index],
+                    checked: false,
+                  )
               )
           )
         ],

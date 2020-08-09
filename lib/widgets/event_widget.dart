@@ -3,10 +3,9 @@ import 'package:google_calendar_wrapper/imports.dart';
 
 class EventWidget extends StatefulWidget {
   final DateTime date;
-  final Event event;
+  final CustomEvent event;
 
-  bool checked;
-  EventWidget({@required this.date, @required this.event, this.checked = false});
+  EventWidget({@required this.date, @required this.event});
 
   @override
   _EventWidgetState createState() => _EventWidgetState();
@@ -14,14 +13,16 @@ class EventWidget extends StatefulWidget {
 
 class _EventWidgetState extends State<EventWidget>
     with SingleTickerProviderStateMixin {
+  bool get checked => this.widget.event.checked;
+
   @override
   Widget build(BuildContext context) {
     Color eventColor = colorFromHex(
-      COLORS['event'][this.widget.event.colorId ?? 'default']['background']
+      COLORS['event'][this.widget.event.colorId]['background']
     );
 
-    DateTime start = widget.event.start.dateTime;
-    DateTime end = widget.event.end.dateTime;
+    DateTime start = widget.event.start;
+    DateTime end = widget.event.end;
 
     bool fullDayEvent = true;
 
@@ -51,7 +52,7 @@ class _EventWidgetState extends State<EventWidget>
         style: TextStyle(
             fontSize: 18,
             color: Colors.white,
-            decoration: widget.checked
+            decoration: this.checked
                 ? TextDecoration.lineThrough
                 : TextDecoration.none),
       ),
@@ -60,7 +61,7 @@ class _EventWidgetState extends State<EventWidget>
         style: TextStyle(
             fontSize: 18,
             color: Colors.white,
-            decoration: widget.checked
+            decoration: this.checked
                 ? TextDecoration.lineThrough
                 : TextDecoration.none),
       )
@@ -72,8 +73,10 @@ class _EventWidgetState extends State<EventWidget>
       curve: Curves.decelerate,
       
       child: InkWell(
-        onTap: () =>
-          setState(() => widget.checked = !widget.checked),
+        onTap: () async {
+          await widget.event.toggleChecked();
+          setState(() {});
+        },
         splashColor: Theme.of(context).primaryColor,
 
         child: Ink(
@@ -84,7 +87,7 @@ class _EventWidgetState extends State<EventWidget>
           
           child: ConstrainedBox(
             constraints: BoxConstraints(
-              minHeight: widget.checked ? 50 : 100,
+              minHeight: this.checked ? 50 : 100,
             ),
 
             child: Row(
@@ -95,10 +98,12 @@ class _EventWidgetState extends State<EventWidget>
                 Checkbox(
                     checkColor: eventColor,
                     activeColor: Colors.white,
-                    value: widget.checked,
-                    onChanged: (bool value) {
-                      setState(() => widget.checked = value);
-                    }),
+                    value: this.checked,
+                    onChanged: (bool value) async {
+                      await widget.event.toggleChecked();
+                      setState(() {});
+                    },
+                ),
 
                 Expanded(
                   flex: 1,
@@ -134,7 +139,7 @@ class _EventWidgetState extends State<EventWidget>
                                 style: TextStyle(
                                     fontSize: 20,
                                     color: Colors.white,
-                                    decoration: widget.checked
+                                    decoration: this.checked
                                         ? TextDecoration.lineThrough
                                         : TextDecoration.none),
                               ),
@@ -142,9 +147,9 @@ class _EventWidgetState extends State<EventWidget>
                           ],
                         ),
 
-                        if (!widget.checked) SizedBox(height: 16),
+                        if (!this.checked) SizedBox(height: 16),
                         
-                        if (!widget.checked)
+                        if (!this.checked)
                           Text(
                             '${widget.event.description ?? '(No description)'}',
                             maxLines: 4,
