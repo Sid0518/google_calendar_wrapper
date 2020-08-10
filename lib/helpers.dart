@@ -78,7 +78,7 @@ Map<DateTime, List<CustomEvent>> sortEvents(
     event.start.dateTime = (event.start.dateTime ?? event.start.date).toLocal();
     event.end.dateTime = (event.end.dateTime ?? event.start.date).toLocal();
 
-    if (event.start.dateTime.compareTo(dtmin) <= 0 || 
+    if (event.start.dateTime.compareTo(dtmin) < 0 || 
         event.start.dateTime.compareTo(dtmax) > 0)
       continue;
     

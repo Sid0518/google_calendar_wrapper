@@ -21,9 +21,11 @@ class CustomEvent {
   }) {
       this.id = Uuid().v1();
       this.colorId = 'default';
+
+      this.addToDatabase();
   }
 
-  CustomEvent.fromEvent({Event event, this.checked = false}) {
+  CustomEvent.fromEvent({Event event}) {
     this.id = event.id;
     this.summary = event.summary ?? '(No title)';
     this.description = event.description ?? '(No description)';
@@ -32,7 +34,8 @@ class CustomEvent {
     this.start = event.start.dateTime ?? event.start.date;
     this.end = event.end.dateTime ?? event.start.date;
 
-    this.addToDatabase();
+    this.checked = false;
+    this.setChecked().then((value) => this.addToDatabase());
   }
 
   CustomEvent.fromMap(Map<String, dynamic> map) {
@@ -64,6 +67,22 @@ class CustomEvent {
       'end': this.end.toIso8601String(),
       'checked': this.checked ? 1 : 0
     };
+  }
+
+  Future<void> setChecked() async {
+    List<Map<String, dynamic>> queryResult = 
+      await db.query(
+        'events',
+        columns: ['checked'],
+        where: 'eventId = ?',
+        whereArgs: [this.id]
+      );
+
+    if(queryResult.length > 0)
+      this.checked = queryResult.first['checked'] == 1 ? true : false;
+    else
+      this.checked = true;
+    this._eventEmitter.add('Toggled');
   }
 
   Future<void> addToDatabase() async {
