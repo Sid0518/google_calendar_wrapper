@@ -13,7 +13,6 @@ class HomePage extends StatefulWidget {
 class _HomePageState extends State<HomePage> {
   final googleSignIn = GoogleSignIn(scopes: scopes);
   Events events = Events();
-  List<Event> listEvents = [];
   RangeValues dateRange = RangeValues(-30, 7);
 
   Map<DateTime, List<CustomEvent>> sortedEvents;
@@ -23,6 +22,7 @@ class _HomePageState extends State<HomePage> {
   Future<void> login() async {
     await this.googleSignIn.signIn();
     this.selectedDate = resetDate(DateTime.now());
+
     await this.updateEvents();
   }
 
@@ -40,8 +40,8 @@ class _HomePageState extends State<HomePage> {
           this.dateRange.start.round().abs(),
           this.dateRange.end.round().abs()
         );
-      this.sortedEvents = sortEvents(this.events.items);
 
+      this.sortedEvents = sortEvents(this.events.items);
       setState(() {});
     } 
     

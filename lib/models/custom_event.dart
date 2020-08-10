@@ -1,5 +1,3 @@
-import 'dart:async';
-
 import 'package:google_calendar_wrapper/imports.dart';
 
 class CustomEvent {
@@ -17,7 +15,7 @@ class CustomEvent {
   Stream get emitter => this._eventEmitter.stream;
 
   CustomEvent({
-    this.summary = '', this.description = '', 
+    this.summary = '(No title)', this.description = '(No description)', 
     this.start, this.end, 
     this.checked = false
   }) {
@@ -27,8 +25,8 @@ class CustomEvent {
 
   CustomEvent.fromEvent({Event event, this.checked = false}) {
     this.id = event.id;
-    this.summary = event.summary ?? '';
-    this.description = event.description ?? '';
+    this.summary = event.summary ?? '(No title)';
+    this.description = event.description ?? '(No description)';
     this.colorId = event.colorId ?? 'default';
 
     this.start = event.start.dateTime ?? event.start.date;

@@ -104,14 +104,14 @@ class _EventWidgetState extends State<EventWidget>
               mainAxisSize: MainAxisSize.max,
               
               children: [
-                Checkbox(
+                IgnorePointer(
+                  child: Checkbox(
                     checkColor: eventColor,
                     activeColor: Colors.white,
+                    
                     value: this.checked,
-                    onChanged: (bool value) async {
-                      await widget.event.toggleWithUpdate();
-                      setState(() {});
-                    },
+                    onChanged: (bool value) {},
+                  ),
                 ),
 
                 Expanded(
@@ -141,7 +141,7 @@ class _EventWidgetState extends State<EventWidget>
                               curve: Curves.decelerate,
           
                               child: Text(
-                                '${widget.event.summary ?? '(No title)'}',
+                                '${widget.event.summary}',
                                 maxLines: 1,
                                 overflow: TextOverflow.ellipsis,
                                 
@@ -160,7 +160,7 @@ class _EventWidgetState extends State<EventWidget>
                         
                         if (!this.checked)
                           Text(
-                            '${widget.event.description ?? '(No description)'}',
+                            '${widget.event.description}',
                             maxLines: 4,
                             overflow: TextOverflow.ellipsis,
                             

@@ -32,13 +32,15 @@ class SingleDayEventsView extends StatelessWidget {
             shrinkWrap: true,
             scrollDirection: Axis.vertical,
             physics: NeverScrollableScrollPhysics(),
-            separatorBuilder: (context, index) => SizedBox(height: 8),
+            
             itemCount: this.events.length,
             itemBuilder: (context, index) =>
               EventWidget(
                 date: this.date,
                 event: this.events[index],
-              )
+              ),
+            separatorBuilder: (context, index) => 
+              SizedBox(height: 8),
           )
         ],
       ),
