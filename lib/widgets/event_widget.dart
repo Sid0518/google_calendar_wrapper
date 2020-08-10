@@ -213,4 +213,10 @@ class _EventWidgetState extends State<EventWidget>
       ),
     );
   }
+
+  @override
+  void dispose() {
+    super.dispose();
+    this.controller.dispose();
+  }
 }

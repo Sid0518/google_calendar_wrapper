@@ -44,7 +44,7 @@ Future<Events> getEvents(
   DateTime dtmin = resettedDate.subtract(Duration(days: daysBackward)).toUtc();
   DateTime dtmax = resettedDate.add(Duration(days: daysForward)).toUtc();
   
-  print("$dtmin, $dtmax");
+  // print("$dtmin, $dtmax");
   
   Events newEvents = await CalendarApi(httpClient)
     .events
@@ -71,24 +71,17 @@ Map<DateTime, List<CustomEvent>> sortEvents(
   DateTime dtmax = resettedDate.add(Duration(days: daysForward)).toUtc();
 
   for (Event event in events) {
-
-    if (event.start == null) {
+    if (event.start == null)
       continue;
-    }
 
-    if (event.start.dateTime.compareTo(dtmin) <= 0 || event.start.dateTime.compareTo(dtmax) > 0) {
+    // If event is a full-day event, dateTime will be null, but date will not
+    event.start.dateTime = (event.start.dateTime ?? event.start.date).toLocal();
+    event.end.dateTime = (event.end.dateTime ?? event.start.date).toLocal();
+
+    if (event.start.dateTime.compareTo(dtmin) <= 0 || 
+        event.start.dateTime.compareTo(dtmax) > 0)
       continue;
-    }
-
-    // If event is full-day event
-    if(event.start.dateTime == null) {
-      event.start.dateTime = event.start.date;
-      event.end.dateTime = event.end.date;
-    }
-
-    event.start.dateTime = event.start.dateTime.toLocal();
-    event.end.dateTime = event.end.dateTime.toLocal();
-
+    
     DateTime startResetDate = resetDate(event.start.dateTime);
     DateTime endResetDate = resetDate(event.end.dateTime);
 
