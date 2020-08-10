@@ -12,8 +12,11 @@ class EventWidget extends StatefulWidget {
 }
 
 class _EventWidgetState extends State<EventWidget>
-    with SingleTickerProviderStateMixin {
+    with TickerProviderStateMixin {
   bool get checked => this.widget.event.checked;
+  AnimationController controller;
+  Animation<Offset> offset;
+  Animation<double> opacity;
 
   @override
   void initState() {
@@ -22,6 +25,24 @@ class _EventWidgetState extends State<EventWidget>
         setState(() {});
     });
     super.initState();
+
+    this.controller = AnimationController(
+      duration: Duration(milliseconds: 320),
+      vsync: this,
+    );
+    final curvedAnim = CurvedAnimation(
+      curve: Curves.decelerate,
+      parent: this.controller,
+    );
+
+    this.offset = 
+      Tween<Offset>(begin: Offset(-1, 0), end: Offset.zero)
+        .animate(curvedAnim);
+    this.opacity = 
+      Tween<double>(begin: 0.0, end: 1.0)
+        .animate(curvedAnim);
+
+    this.controller.forward();
   }
 
   @override
@@ -81,99 +102,111 @@ class _EventWidgetState extends State<EventWidget>
       duration: Duration(milliseconds: 200),
       curve: Curves.decelerate,
       
-      child: InkWell(
-        onTap: () async {
-          await widget.event.toggleWithUpdate();
-          setState(() {});
-        },
-        splashColor: Theme.of(context).primaryColor,
+      child: FadeTransition(
+        opacity: this.opacity,
 
-        child: Ink(
-          decoration: BoxDecoration(
-            color: eventColor,
-            borderRadius: BorderRadius.circular(8),
-          ),
+        child: SlideTransition(
+          position: this.offset,
           
-          child: ConstrainedBox(
-            constraints: BoxConstraints(
-              minHeight: this.checked ? 50 : 100,
+          child: Container(
+            decoration: BoxDecoration(
+              color: eventColor,
+              borderRadius: BorderRadius.circular(8),
             ),
+            
+            child: Material(
+              type: MaterialType.transparency,
 
-            child: Row(
-              crossAxisAlignment: CrossAxisAlignment.center,
-              mainAxisSize: MainAxisSize.max,
-              
-              children: [
-                IgnorePointer(
-                  child: Checkbox(
-                    checkColor: eventColor,
-                    activeColor: Colors.white,
-                    
-                    value: this.checked,
-                    onChanged: (bool value) {},
+              child: InkWell(
+                onTap: () async {
+                  await widget.event.toggleWithUpdate();
+                  setState(() {});
+                },
+                splashColor: Theme.of(context).primaryColor,
+                
+                child: ConstrainedBox(
+                  constraints: BoxConstraints(
+                    minHeight: this.checked ? 50 : 100,
                   ),
-                ),
 
-                Expanded(
-                  flex: 1,
-                  child: Column(
+                  child: Row(
                     crossAxisAlignment: CrossAxisAlignment.center,
-                    children: time,
+                    mainAxisSize: MainAxisSize.max,
+                    
+                    children: [
+                      IgnorePointer(
+                        child: Checkbox(
+                          checkColor: eventColor,
+                          activeColor: Colors.white,
+                          
+                          value: this.checked,
+                          onChanged: (bool value) {},
+                        ),
+                      ),
+
+                      Expanded(
+                        flex: 1,
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.center,
+                          children: time,
+                        ),
+                      ),
+
+                      SizedBox(width: 8),
+
+                      Expanded(
+                        flex: 6,
+                        
+                        child: Padding(
+                          padding: const EdgeInsets.fromLTRB(16, 16, 24, 16),
+                          
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            
+                            children: <Widget>[
+                              Stack(
+                                children: <Widget>[
+                                  AnimatedPositioned(
+                                    duration: Duration(milliseconds: 200),
+                                    curve: Curves.decelerate,
+                
+                                    child: Text(
+                                      '${widget.event.summary}',
+                                      maxLines: 1,
+                                      overflow: TextOverflow.ellipsis,
+                                      
+                                      style: TextStyle(
+                                          fontSize: 20,
+                                          color: Colors.white,
+                                          decoration: this.checked
+                                              ? TextDecoration.lineThrough
+                                              : TextDecoration.none),
+                                    ),
+                                  ),
+                                ],
+                              ),
+
+                              if (!this.checked) SizedBox(height: 16),
+                              
+                              if (!this.checked)
+                                Text(
+                                  '${widget.event.description}',
+                                  maxLines: 4,
+                                  overflow: TextOverflow.ellipsis,
+                                  
+                                  style: TextStyle(
+                                    fontSize: 16,
+                                    color: Colors.white70,
+                                  ),
+                                ),
+                            ],
+                          ),
+                        ),
+                      )
+                    ],
                   ),
                 ),
-
-                SizedBox(width: 8),
-
-                Expanded(
-                  flex: 6,
-                  
-                  child: Padding(
-                    padding: const EdgeInsets.fromLTRB(16, 16, 24, 16),
-                    
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      
-                      children: <Widget>[
-                        Stack(
-                          children: <Widget>[
-                            AnimatedPositioned(
-                              duration: Duration(milliseconds: 200),
-                              curve: Curves.decelerate,
-          
-                              child: Text(
-                                '${widget.event.summary}',
-                                maxLines: 1,
-                                overflow: TextOverflow.ellipsis,
-                                
-                                style: TextStyle(
-                                    fontSize: 20,
-                                    color: Colors.white,
-                                    decoration: this.checked
-                                        ? TextDecoration.lineThrough
-                                        : TextDecoration.none),
-                              ),
-                            ),
-                          ],
-                        ),
-
-                        if (!this.checked) SizedBox(height: 16),
-                        
-                        if (!this.checked)
-                          Text(
-                            '${widget.event.description}',
-                            maxLines: 4,
-                            overflow: TextOverflow.ellipsis,
-                            
-                            style: TextStyle(
-                              fontSize: 16,
-                              color: Colors.white70,
-                            ),
-                          ),
-                      ],
-                    ),
-                  ),
-                )
-              ],
+              ),
             ),
           ),
         ),
