@@ -7,6 +7,18 @@ Color colorFromHex(String hexColor) {
   return Color(int.parse(hexColor, radix: 16));
 }
 
+bool endBeforeStart(
+  DateTime startDate, TimeOfDay startTime,
+  DateTime endDate, TimeOfDay endTime
+) {
+  return 
+    endDate
+      .add(Duration(hours: endTime.hour, minutes: endTime.minute))
+      .isBefore(
+        startDate
+          .add(Duration(hours: startTime.hour, minutes: startTime.minute)));
+}
+
 /// Selects a date using the datepicker widget
 Future<DateTime> selectDate(BuildContext context, DateTime initialDate) async {
   final DateTime picked = await showDatePicker(

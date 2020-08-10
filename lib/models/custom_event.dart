@@ -15,10 +15,14 @@ class CustomEvent {
   Stream get emitter => this._eventEmitter.stream;
 
   CustomEvent({
-    this.summary = '(No title)', this.description = '(No description)', 
+    this.summary, this.description, 
     this.start, this.end, 
     this.checked = false
   }) {
+      this.summary ??= '(No title)';
+      this.description ??= '(No description)';
+      this.checked ??= false;
+
       this.id = Uuid().v1();
       this.colorId = 'default';
 

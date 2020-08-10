@@ -183,14 +183,30 @@ class _HomePageState extends State<HomePage> {
 
         floatingActionButton: FloatingActionButton(
             child: Icon(Icons.add), 
-            onPressed: () =>
-              showDialog(
-                context: context,
+            onPressed: () async {
+              CustomEvent newEvent = 
+                await showModalBottomSheet(
+                  context: context,
+                  isDismissible: false,
+                  isScrollControlled: true,
 
-                child: AlertDialog(
-                  title: Text('Adding to Todo not yet implemented'),
-                )
-              )
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.vertical(top: Radius.circular(16)),
+                  ),
+
+                  builder: (context) => 
+                    WillPopScope(
+                      onWillPop: () async => false,
+                      child: Padding(
+                        padding: MediaQuery.of(context).viewInsets,
+                        child: AddEventDialog(),
+                      ),
+                    )
+                );
+              
+              if(newEvent != null)  
+                print('Added new event: ${newEvent.summary} ${newEvent.description}');
+            }
         )
     );
   }
