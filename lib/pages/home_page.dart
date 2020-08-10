@@ -32,7 +32,6 @@ class _HomePageState extends State<HomePage> {
       // Nullify sortedEvents and setState, so that progress indicator pops up
       this.sortedEvents = null;
       setState(() {});
-
       this.events =
         await getEvents(
           this.googleSignIn.currentUser, 
@@ -41,7 +40,12 @@ class _HomePageState extends State<HomePage> {
           this.dateRange.end.round().abs()
         );
 
-      this.sortedEvents = sortEvents(this.events.items);
+      this.sortedEvents = sortEvents(
+        this.events.items,
+        this.selectedDate, 
+        this.dateRange.start.round().abs(),
+        this.dateRange.end.round().abs()
+      );
       setState(() {});
     } 
     

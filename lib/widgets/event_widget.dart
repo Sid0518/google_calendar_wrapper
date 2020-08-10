@@ -145,7 +145,7 @@ class _EventWidgetState extends State<EventWidget>
                       ),
 
                       Expanded(
-                        flex: 1,
+                        flex: 2,
                         child: Column(
                           crossAxisAlignment: CrossAxisAlignment.center,
                           children: time,

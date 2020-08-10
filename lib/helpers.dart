@@ -38,24 +38,48 @@ Future<Events> getEvents(
 ) async {
   final authHeaders = await currentUser.authHeaders;
   final httpClient = GoogleHttpClient(authHeaders);
-  
+
   DateTime resettedDate = resetDate(selectedDate);
+
+  DateTime dtmin = resettedDate.subtract(Duration(days: daysBackward)).toUtc();
+  DateTime dtmax = resettedDate.add(Duration(days: daysForward)).toUtc();
+  
+  print("$dtmin, $dtmax");
+  
   Events newEvents = await CalendarApi(httpClient)
     .events
     .list(
       'primary',
-      timeMin: resettedDate.subtract(Duration(days: daysBackward)).toUtc(),
-      timeMax: resettedDate.add(Duration(days: daysForward)).toUtc(),
+      timeMin: dtmin,
+      timeMax: dtmax,
     );
 
   return newEvents;
 }
 
 /// Sorts events into a map with dates to events
-Map<DateTime, List<CustomEvent>> sortEvents(List<Event> events) {
+Map<DateTime, List<CustomEvent>> sortEvents(
+  List<Event> events, [DateTime selectedDate,
+  int daysBackward, 
+  int daysForward]
+) {
   Map<DateTime, List<CustomEvent>> outMap = {};
 
+  DateTime resettedDate = resetDate(selectedDate);
+
+  DateTime dtmin = resettedDate.subtract(Duration(days: daysBackward)).toUtc();
+  DateTime dtmax = resettedDate.add(Duration(days: daysForward)).toUtc();
+
   for (Event event in events) {
+
+    if (event.start == null) {
+      continue;
+    }
+
+    if (event.start.dateTime.compareTo(dtmin) <= 0 || event.start.dateTime.compareTo(dtmax) > 0) {
+      continue;
+    }
+
     // If event is full-day event
     if(event.start.dateTime == null) {
       event.start.dateTime = event.start.date;
