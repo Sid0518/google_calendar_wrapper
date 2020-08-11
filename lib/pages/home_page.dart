@@ -12,7 +12,10 @@ class HomePage extends StatefulWidget {
 
 class _HomePageState extends State<HomePage> {
   final googleSignIn = GoogleSignIn(scopes: scopes);
-  Events events = Events();
+
+  final scrollController = ScrollController();
+  bool enableGoBack = false;
+
   RangeValues dateRange = RangeValues(-30, 7);
 
   Map<DateTime, List<CustomEvent>> sortedEvents;
@@ -32,20 +35,29 @@ class _HomePageState extends State<HomePage> {
       // Nullify sortedEvents and setState, so that progress indicator pops up
       this.sortedEvents = null;
       setState(() {});
-      this.events =
-        await getEvents(
+      List<CustomEvent> eventsFromApi =
+        await getEventsFromCalendarApi(
           this.googleSignIn.currentUser, 
           this.selectedDate, 
           this.dateRange.start.round().abs(),
           this.dateRange.end.round().abs()
         );
+      Set<String> eventIds = Set.from(eventsFromApi.map((event) => event.id));
+
+      List<CustomEvent> eventsFromSQLite = await getEventsFromSQLite();
+      List<CustomEvent> locallyAddedEvents = eventsFromSQLite
+        .where((event) => !eventIds.contains(event.id))
+        .toList();
+
+      List<CustomEvent> events = eventsFromApi + locallyAddedEvents;
 
       this.sortedEvents = sortEvents(
-        this.events.items,
+        events,
         this.selectedDate, 
         this.dateRange.start.round().abs(),
         this.dateRange.end.round().abs()
       );
+
       setState(() {});
     } 
     
@@ -134,6 +146,15 @@ class _HomePageState extends State<HomePage> {
   void initState() {
     super.initState();
     this.login();
+
+    this.scrollController.addListener(() {
+      if(this.scrollController.offset > 800) {
+        setState(() => this.enableGoBack = true);
+      }
+
+      else if(this.enableGoBack)
+        setState(() => this.enableGoBack = false);
+    });
   }
 
   @override
@@ -160,29 +181,66 @@ class _HomePageState extends State<HomePage> {
             ),
           ],
         ),
-        body: dates != null ?
-          RefreshIndicator(
-            onRefresh: this.updateEvents,
+        body: Stack(
+          children: <Widget>[
+            dates != null ?
+              RefreshIndicator(
+                onRefresh: this.updateEvents,
 
-            child: ListView.separated(
-              itemCount: dates.length,
-              itemBuilder: (context, index) {
-                  DateTime date = dates[index];
-                  return SingleDayEventsView(
-                    date: date,
-                    events: this.sortedEvents[date]
-                  );
-              },
-              separatorBuilder: (context, index) =>
-                Divider(height: 8, thickness: 1, indent: 16, endIndent: 16),
-            ),
-          ) : 
-          Center(
-            child: CircularProgressIndicator(),
-          ),
+                child: ListView.separated(
+                  controller: this.scrollController,
+
+                  itemCount: dates.length,
+                  itemBuilder: (context, index) {
+                      DateTime date = dates[index];
+                      return SingleDayEventsView(
+                        date: date,
+                        events: this.sortedEvents[date]
+                      );
+                  },
+                  separatorBuilder: (context, index) =>
+                    Divider(height: 8, thickness: 1, indent: 16, endIndent: 16),
+                ),
+              ) : 
+              Center(
+                child: CircularProgressIndicator(),
+              ),
+
+              AnimatedPositioned(
+                duration: Duration(milliseconds: 200),
+
+                top: this.enableGoBack ? 16 : -64,
+                right: 16,
+
+                child: Container(
+                  height: 40,
+                  width: 40,
+                  
+                  child: FittedBox(
+                    child: FloatingActionButton(
+                      child: Icon(
+                        Icons.arrow_upward, 
+                        color: Theme.of(context).accentColor
+                      ),
+                      backgroundColor: Colors.white,
+                      
+                      onPressed: () => 
+                        this.scrollController
+                          .animateTo(
+                            0, 
+                            duration: Duration(milliseconds: 400), 
+                            curve: Curves.decelerate,
+                          )
+                    ),
+                  ),
+                ),
+              )
+          ],
+        ),
 
         floatingActionButton: FloatingActionButton(
-            child: Icon(Icons.add), 
+            child: Icon(Icons.add),
+
             onPressed: () async {
               CustomEvent newEvent = 
                 await showModalBottomSheet(
@@ -204,8 +262,18 @@ class _HomePageState extends State<HomePage> {
                     )
                 );
               
-              if(newEvent != null)  
-                print('Added new event: ${newEvent.summary} ${newEvent.description}');
+              if(newEvent != null)
+                setState(() {
+                  List<CustomEvent> events = [];
+                  DateTime startResetDate = resetDate(newEvent.start.toLocal());
+
+                  if(this.sortedEvents.containsKey(startResetDate))
+                    events = this.sortedEvents[startResetDate];
+                  
+                  events.add(newEvent);
+                  events.sort((a, b) => a.start.compareTo(b.start));
+                  this.sortedEvents[startResetDate] = events;
+                });
             }
         )
     );
