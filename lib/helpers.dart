@@ -42,7 +42,7 @@ DateTime resetDate(DateTime selectedDate) {
 }
 
 /// Gets all events for a user within a specific date range
-Future<Events> getEvents(
+Future<List<CustomEvent>> getEventsFromCalendarApi(
   GoogleSignInAccount currentUser, 
   DateTime selectedDate,
   int daysBackward, 
@@ -66,49 +66,55 @@ Future<Events> getEvents(
       timeMax: dtmax,
     );
 
-  return newEvents;
+  return newEvents.items
+    .map((event) => CustomEvent.fromEvent(event: event))
+    .toList();
 }
 
-/// Sorts events into a map with dates to events
-Map<DateTime, List<CustomEvent>> sortEvents(
-  List<Event> events, [DateTime selectedDate,
-  int daysBackward, 
-  int daysForward]
-) {
-  Map<DateTime, List<CustomEvent>> outMap = {};
+Future<List<CustomEvent>> getEventsFromSQLite() async {
+  return db.query('events')
+    .then((response) => 
+      response.map((item) => 
+        CustomEvent.fromMap(item)).toList()
+    );
+}
 
+List<CustomEvent> filterEventsByDate(
+  List<CustomEvent> events, 
+  DateTime selectedDate,
+  int daysBackward, 
+  int daysForward
+) {
   DateTime resettedDate = resetDate(selectedDate);
 
   DateTime dtmin = resettedDate.subtract(Duration(days: daysBackward)).toUtc();
   DateTime dtmax = resettedDate.add(Duration(days: daysForward)).toUtc();
 
-  for (Event event in events) {
-    if (event.start == null)
-      continue;
+  return events
+    .where((event) => 
+      !event.start.isBefore(dtmin) && !event.start.isAfter(dtmax))
+    .toList();
+}
 
-    // If event is a full-day event, dateTime will be null, but date will not
-    event.start.dateTime = (event.start.dateTime ?? event.start.date).toLocal();
-    event.end.dateTime = (event.end.dateTime ?? event.start.date).toLocal();
+Map<DateTime, List<CustomEvent>> groupEventsByDate(List<CustomEvent> events) {
+  Map<DateTime, List<CustomEvent>> outMap = {};
 
-    if (event.start.dateTime.compareTo(dtmin) < 0 || 
-        event.start.dateTime.compareTo(dtmax) > 0)
-      continue;
-    
-    DateTime startResetDate = resetDate(event.start.dateTime);
-    DateTime endResetDate = resetDate(event.end.dateTime);
+  for (CustomEvent event in events) {
+    DateTime startResetDate = resetDate(event.start.toLocal());
+    DateTime endResetDate = resetDate(event.end.toLocal());
 
     List<CustomEvent> splitEvents = [];
     do {
-      CustomEvent customEvent = CustomEvent.fromEvent(event: event);
-      splitEvents.add(customEvent);
+      CustomEvent eventCopy = CustomEvent.fromCustomEvent(event: event);
+      splitEvents.add(eventCopy);
 
       if(outMap.containsKey(startResetDate))
-        outMap[startResetDate].add(customEvent);
+        outMap[startResetDate].add(eventCopy);
       else
-        outMap[startResetDate] = [customEvent];
+        outMap[startResetDate] = [eventCopy];
       
       startResetDate = startResetDate.add(Duration(days: 1));
-    } 
+    }
     while(!endResetDate.isBefore(startResetDate));
 
     /*
@@ -126,6 +132,19 @@ Map<DateTime, List<CustomEvent>> sortEvents(
         if(event != other)
           event.addToggleListener(other.emitter);
   }
+
+  return outMap;
+}
+
+/// Sorts events into a map with dates to events
+Map<DateTime, List<CustomEvent>> sortEvents(
+  List<CustomEvent> events, 
+  DateTime selectedDate,
+  int daysBackward, 
+  int daysForward
+) {
+  events = filterEventsByDate(events, selectedDate, daysBackward, daysForward);
+  Map<DateTime, List<CustomEvent>> outMap = groupEventsByDate(events);
 
   for (List<CustomEvent> events in outMap.values)
     events.sort((a, b) => a.start.compareTo(b.start));
