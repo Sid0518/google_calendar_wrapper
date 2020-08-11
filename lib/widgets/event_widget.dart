@@ -51,8 +51,8 @@ class _EventWidgetState extends State<EventWidget>
       COLORS['event'][this.widget.event.colorId]['background']
     );
 
-    DateTime start = widget.event.start;
-    DateTime end = widget.event.end;
+    DateTime start = widget.event.start.toLocal();
+    DateTime end = widget.event.end.toLocal();
 
     bool fullDayEvent = true;
 

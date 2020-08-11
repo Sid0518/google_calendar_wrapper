@@ -11,22 +11,39 @@ class CustomEvent {
 
   bool checked;
   
-  StreamController _eventEmitter = StreamController.broadcast();
-  Stream get emitter => this._eventEmitter.stream;
+  /* The comment below tells VSCode to stop crying */
+  // ignore: close_sinks
+  StreamController toggleNotifier = StreamController.broadcast();
+  Stream get emitter => this.toggleNotifier.stream;
 
   CustomEvent({
     this.summary, this.description, 
     this.start, this.end, 
     this.checked = false
   }) {
+      this.id = Uuid().v1();
       this.summary ??= '(No title)';
       this.description ??= '(No description)';
-      this.checked ??= false;
-
-      this.id = Uuid().v1();
       this.colorId = 'default';
 
+      this.start = this.start.toUtc();
+      this.end = this.end.toUtc();
+
+      this.checked ??= false;
+
       this.addToDatabase();
+  }
+
+  CustomEvent.fromCustomEvent({CustomEvent event}) {
+    this.id = event.id;
+    this.summary = event.summary;
+    this.description = event.description;
+    this.colorId = event.colorId;
+
+    this.start = event.start.toUtc();
+    this.end = event.end.toUtc();
+
+    this.checked = event.checked;
   }
 
   CustomEvent.fromEvent({Event event}) {
@@ -35,8 +52,8 @@ class CustomEvent {
     this.description = event.description ?? '(No description)';
     this.colorId = event.colorId ?? 'default';
 
-    this.start = event.start.dateTime ?? event.start.date;
-    this.end = event.end.dateTime ?? event.start.date;
+    this.start = (event.start.dateTime ?? event.start.date).toUtc();
+    this.end = (event.end.dateTime ?? event.start.date).toUtc();
 
     this.checked = false;
     this.setChecked().then((value) => this.addToDatabase());
@@ -48,14 +65,14 @@ class CustomEvent {
     this.description = map['description'];
     this.colorId = map['colorId'];
 
-    this.start = DateTime.parse(map['start']);
-    this.end = DateTime.parse(map['end']);
+    this.start = DateTime.parse(map['start']).toUtc();
+    this.end = DateTime.parse(map['end']).toUtc();
 
     this.checked = map['checked'] == 1 ? true : false;
   }
 
-  void addToggleListener(Stream emitter) {
-    emitter.listen((event) {
+  void addToggleListener(Stream notifier) {
+    notifier.listen((event) {
       if(event == 'Toggled with update')
         this.toggle();
     });
@@ -85,8 +102,8 @@ class CustomEvent {
     if(queryResult.length > 0)
       this.checked = queryResult.first['checked'] == 1 ? true : false;
     else
-      this.checked = true;
-    this._eventEmitter.add('Toggled');
+      this.checked = false;
+    this.toggleNotifier.add('Toggled');
   }
 
   Future<void> addToDatabase() async {
@@ -99,12 +116,12 @@ class CustomEvent {
 
   void toggle() {
     this.checked = !this.checked;
-    this._eventEmitter.add('Toggled');
+    this.toggleNotifier.add('Toggled');
   }
 
   Future<void> toggleWithUpdate() async {
     this.checked = !this.checked;
-    this._eventEmitter.add('Toggled with update');
+    this.toggleNotifier.add('Toggled with update');
 
     await db.update(
       'events',

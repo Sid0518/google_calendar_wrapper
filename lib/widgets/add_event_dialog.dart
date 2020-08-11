@@ -172,7 +172,7 @@ class _AddEventDialogState extends State<AddEventDialog> {
                   onTap: () async {
                     DateTime date = await showDatePicker(
                       context: context,
-                      initialDate: this.endDate,
+                      initialDate: this.startDate,
                       firstDate: this.startDate,
                       lastDate: DateTime.now().toLocal().add(Duration(days: 365*5)),
                     );
@@ -282,6 +282,7 @@ class _AddEventDialogState extends State<AddEventDialog> {
                         )
                       ),
                     );
+
                     Navigator.pop(context, event);
                   }
                 ),
