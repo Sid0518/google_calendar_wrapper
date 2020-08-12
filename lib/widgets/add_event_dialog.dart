@@ -9,10 +9,10 @@ class _AddEventDialogState extends State<AddEventDialog> {
   String summary;
   String description;
   
-  DateTime startDate = DateTime.now().toLocal();
+  DateTime startDate = resetDate(DateTime.now().toLocal());
   TimeOfDay startTime = TimeOfDay.fromDateTime(DateTime.now().toLocal());
 
-  DateTime endDate = DateTime.now().toLocal();
+  DateTime endDate = resetDate(DateTime.now().toLocal());
   TimeOfDay endTime = TimeOfDay.fromDateTime(DateTime.now().toLocal());
 
   @override
