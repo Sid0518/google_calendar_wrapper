@@ -14,12 +14,24 @@ class EventWidget extends StatefulWidget {
 class _EventWidgetState extends State<EventWidget>
     with TickerProviderStateMixin {
   bool get checked => this.widget.event.checked;
+  
   AnimationController controller;
   Animation<Offset> offset;
   Animation<double> opacity;
 
   @override
   void initState() {
+    /*
+      VERY HACKY:  REPLACE THIS LOGIC AT THE EARLIEST
+      
+      If an event spanning multiple days is deleted, any widget
+      that is off-screen might not have yet been initialized, and
+      hence, would get rendered once the user scrolls to it, even
+      though it has already been deleted
+    */
+    if(this.widget.event.deleted)
+      this.widget.event.eventNotifier.add('Deleted');
+
     this.widget.event.emitter.listen((event) {
       if(event == 'Toggled' && this.mounted)
         setState(() {});
@@ -207,7 +219,7 @@ class _EventWidgetState extends State<EventWidget>
                           flex: 1,
                           child: IconButton(
                             icon: Icon(Icons.delete, color: Colors.white),
-                            onPressed: () {},
+                            onPressed: () => widget.event.deleteFromDatabase(),
                           ),
                         )
                     ],
