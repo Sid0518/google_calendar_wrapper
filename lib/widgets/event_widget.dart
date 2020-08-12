@@ -54,27 +54,19 @@ class _EventWidgetState extends State<EventWidget>
     DateTime start = widget.event.start.toLocal();
     DateTime end = widget.event.end.toLocal();
 
-    bool fullDayEvent = true;
+    if(start.isBefore(widget.date))
+      start = widget.date;
 
-    String startHour = '00';
-    String startMinute = '00';
+    String startHour = start.hour.toString().padLeft(2, '0');
+    String startMinute = start.minute.toString().padLeft(2, '0');
 
-    if(!start.isBefore(widget.date)) {
-      fullDayEvent = false;
+    if(end.isAfter(widget.date.add(Duration(days: 1))))
+      end = widget.date.add(Duration(days: 1));
 
-      startHour = start.hour.toString().padLeft(2, '0');
-      startMinute = start.minute.toString().padLeft(2, '0');
-    }
+    String endHour = end.hour.toString().padLeft(2, '0');
+    String endMinute = end.minute.toString().padLeft(2, '0');
 
-    String endHour = '23';
-    String endMinute = '59';
-
-    if(end.isBefore(widget.date.add(Duration(days: 1)))) {
-      fullDayEvent = false;
-
-      endHour = end.hour.toString().padLeft(2, '0');
-      endMinute = end.minute.toString().padLeft(2, '0');
-    }
+    bool fullDayEvent = end.difference(start) == Duration(days: 1);
 
     List<Widget> time = [
       Text(
@@ -155,7 +147,7 @@ class _EventWidgetState extends State<EventWidget>
                       SizedBox(width: 8),
 
                       Expanded(
-                        flex: 6,
+                        flex: widget.event.local ? 5 : 6,
                         
                         child: Padding(
                           padding: const EdgeInsets.fromLTRB(16, 16, 24, 16),
@@ -208,7 +200,16 @@ class _EventWidgetState extends State<EventWidget>
                             ],
                           ),
                         ),
-                      )
+                      ),
+
+                      if(widget.event.local)
+                        Expanded(
+                          flex: 1,
+                          child: IconButton(
+                            icon: Icon(Icons.delete, color: Colors.white),
+                            onPressed: () {},
+                          ),
+                        )
                     ],
                   ),
                 ),

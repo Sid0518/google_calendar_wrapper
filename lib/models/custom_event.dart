@@ -10,6 +10,7 @@ class CustomEvent {
   DateTime end;
 
   bool checked;
+  bool local;
   
   /* The comment below tells VSCode to stop crying */
   // ignore: close_sinks
@@ -17,19 +18,20 @@ class CustomEvent {
   Stream get emitter => this.toggleNotifier.stream;
 
   CustomEvent({
-    this.summary, this.description, 
+    this.summary, this.description, this.colorId,
     this.start, this.end, 
     this.checked = false
   }) {
       this.id = Uuid().v1();
       this.summary ??= '(No title)';
       this.description ??= '(No description)';
-      this.colorId = 'default';
+      this.colorId ??= 'default';
 
       this.start = this.start.toUtc();
       this.end = this.end.toUtc();
 
       this.checked ??= false;
+      this.local = true;
 
       this.addToDatabase();
   }
@@ -44,6 +46,7 @@ class CustomEvent {
     this.end = event.end.toUtc();
 
     this.checked = event.checked;
+    this.local = event.local;
   }
 
   CustomEvent.fromEvent({Event event}) {
@@ -52,10 +55,14 @@ class CustomEvent {
     this.description = event.description ?? '(No description)';
     this.colorId = event.colorId ?? 'default';
 
-    this.start = (event.start.dateTime ?? event.start.date).toUtc();
+    if(event.originalStartTime != null)
+      this.start = (event.originalStartTime.dateTime ?? event.originalStartTime.date).toUtc();
+    else
+      this.start = (event.start.dateTime ?? event.start.date).toUtc();
     this.end = (event.end.dateTime ?? event.start.date).toUtc();
 
     this.checked = false;
+    this.local = false;
     this.setChecked().then((value) => this.addToDatabase());
   }
 
@@ -69,6 +76,7 @@ class CustomEvent {
     this.end = DateTime.parse(map['end']).toUtc();
 
     this.checked = map['checked'] == 1 ? true : false;
+    this.local = map['local'] == 1 ? true : false;
   }
 
   void addToggleListener(Stream notifier) {
@@ -86,7 +94,8 @@ class CustomEvent {
       'colorId': this.colorId,
       'start': this.start.toIso8601String(),
       'end': this.end.toIso8601String(),
-      'checked': this.checked ? 1 : 0
+      'checked': this.checked ? 1 : 0,
+      'local': this.local ? 1 : 0,
     };
   }
 

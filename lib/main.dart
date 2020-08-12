@@ -22,15 +22,19 @@ void main() async {
     'foreground': '#1d1d1d'
   };
 
+  // await deleteDatabase(join(await getDatabasesPath(), 'events.db'));
+
   db = await openDatabase(
     join(await getDatabasesPath(), 'events.db'),
     onCreate: (db, version) {
       db.execute(
-        "CREATE TABLE events(_id INTEGER PRIMARY KEY AUTOINCREMENT, eventId TEXT, summary TEXT, description TEXT, colorId TEXT, start TEXT, end TEXT, checked INTEGER)",
+        "CREATE TABLE events(_id INTEGER PRIMARY KEY AUTOINCREMENT, eventId TEXT, summary TEXT, description TEXT, colorId TEXT, start TEXT, end TEXT, checked INTEGER, local INTEGER)",
       );
     },
     version: 1,
   );
+  
+  // await db.delete('events');
 
   runApp(App());
 }
