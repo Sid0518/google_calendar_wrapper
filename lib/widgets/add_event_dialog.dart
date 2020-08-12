@@ -8,6 +8,7 @@ class AddEventDialog extends StatefulWidget {
 class _AddEventDialogState extends State<AddEventDialog> {
   String summary;
   String description;
+  String colorId = 'default';
   
   DateTime startDate = resetDate(DateTime.now().toLocal());
   TimeOfDay startTime = TimeOfDay.fromDateTime(DateTime.now().toLocal());
@@ -242,6 +243,55 @@ class _AddEventDialogState extends State<AddEventDialog> {
             ],
           ),
 
+          SizedBox(height: 16),
+          
+          Align(
+            alignment: Alignment.centerLeft,
+            child: Text(
+              'Event color: ',
+              
+              style: TextStyle(
+                fontSize: 16,
+                fontWeight: FontWeight.w400,
+                color: Theme.of(context).primaryColor,
+              ),
+              textAlign: TextAlign.center,
+            ),
+          ),
+
+          SizedBox(height: 16),
+
+          GridView.count(
+            crossAxisCount: 6,
+            shrinkWrap: true,
+            scrollDirection: Axis.vertical,
+
+            children: COLORS['event'].keys.map(
+              (colorId) => 
+                InkWell(
+                  onTap: () => setState(() => this.colorId = colorId),
+
+                  child: Stack(
+                    children: <Widget>[
+                      Container(
+                        decoration: BoxDecoration(
+                          color: colorFromHex(COLORS['event'][colorId]['background']), 
+                        ),
+                      ),
+
+                      if(colorId == this.colorId)
+                        Positioned(
+                          bottom: 0,
+                          right: 0,
+
+                          child: Icon(Icons.check_circle)
+                        )
+                    ],
+                  ),
+                )
+              ).toList().cast<Widget>(),
+          ),
+
           SizedBox(height: 32),
 
           Row(
@@ -267,6 +317,7 @@ class _AddEventDialogState extends State<AddEventDialog> {
                     CustomEvent event = CustomEvent(
                       summary: this.summary,
                       description: this.description,
+                      colorId: this.colorId,
 
                       start: this.startDate.add(
                         Duration(
