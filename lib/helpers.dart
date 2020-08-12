@@ -19,6 +19,30 @@ bool endBeforeStart(
           .add(Duration(hours: startTime.hour, minutes: startTime.minute)));
 }
 
+Widget makeScrollable({Widget child, double maxHeight = 80}) {
+  return ConstrainedBox(
+    constraints: BoxConstraints(
+      maxHeight: maxHeight
+    ),
+
+    child: NotificationListener<OverscrollIndicatorNotification>(
+      onNotification: (OverscrollIndicatorNotification overscroll) {
+        overscroll.disallowGlow();
+        return true;
+      },
+
+      child: ListView(
+        shrinkWrap: true,
+        scrollDirection: Axis.vertical,
+
+        children: <Widget>[
+          child
+        ],
+      ),
+    ),
+  );
+}
+
 /// Selects a date using the datepicker widget
 Future<DateTime> selectDate(BuildContext context, DateTime initialDate) async {
   final DateTime picked = await showDatePicker(

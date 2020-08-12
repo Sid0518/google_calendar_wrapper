@@ -69,7 +69,7 @@ class _EventWidgetState extends State<EventWidget>
     String endHour = '23';
     String endMinute = '59';
 
-    if(!end.isAfter(widget.date.add(Duration(days: 1)))) {
+    if(end.isBefore(widget.date.add(Duration(days: 1)))) {
       fullDayEvent = false;
 
       endHour = end.hour.toString().padLeft(2, '0');
@@ -170,17 +170,20 @@ class _EventWidgetState extends State<EventWidget>
                                     duration: Duration(milliseconds: 200),
                                     curve: Curves.decelerate,
                 
-                                    child: Text(
-                                      '${widget.event.summary}',
-                                      maxLines: 1,
-                                      overflow: TextOverflow.ellipsis,
-                                      
-                                      style: TextStyle(
-                                          fontSize: 20,
-                                          color: Colors.white,
-                                          decoration: this.checked
-                                              ? TextDecoration.lineThrough
-                                              : TextDecoration.none),
+                                    child: makeScrollable(
+                                      maxHeight: 32,
+                                      child: Text(
+                                        '${widget.event.summary}',
+                                        // maxLines: 1,
+                                        // overflow: TextOverflow.ellipsis,
+                                        
+                                        style: TextStyle(
+                                            fontSize: 20,
+                                            color: Colors.white,
+                                            decoration: this.checked
+                                                ? TextDecoration.lineThrough
+                                                : TextDecoration.none),
+                                      ),
                                     ),
                                   ),
                                 ],
@@ -189,14 +192,17 @@ class _EventWidgetState extends State<EventWidget>
                               if (!this.checked) SizedBox(height: 16),
                               
                               if (!this.checked)
-                                Text(
-                                  '${widget.event.description}',
-                                  maxLines: 4,
-                                  overflow: TextOverflow.ellipsis,
-                                  
-                                  style: TextStyle(
-                                    fontSize: 16,
-                                    color: Colors.white70,
+                                makeScrollable(
+                                  maxHeight: 84,
+                                  child: Text(
+                                    '${widget.event.description}',
+                                    // maxLines: 4,
+                                    // overflow: TextOverflow.ellipsis,
+                                    
+                                    style: TextStyle(
+                                      fontSize: 16,
+                                      color: Colors.white70,
+                                    ),
                                   ),
                                 ),
                             ],
