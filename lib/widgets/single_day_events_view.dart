@@ -1,5 +1,9 @@
 import 'package:google_calendar_wrapper/imports.dart';
 
+/*
+  TODO: Discard the slide transition from EventWidget, and instead use
+  AnimatedList here
+*/
 class SingleDayEventsView extends StatefulWidget {
   final DateTime date;
   final List<CustomEvent> events;
