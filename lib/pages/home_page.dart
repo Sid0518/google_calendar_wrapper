@@ -5,6 +5,14 @@ const scopes = const [
   CalendarApi.CalendarEventsReadonlyScope,
 ];
 
+/*
+  TODO: Use AnimatedList here to animate in SingleDayEventsView widgets
+
+  The idea is that if an EventWidget is deleted, its SingleDayEventsView 
+  parent can animate it out of itself using AnimatedList. In case the 
+  SingleDayEventsView becomes empty, then its parent, which is the HomePage, 
+  can now animate it out of itself, again using AnimatedList
+*/
 class HomePage extends StatefulWidget {
   @override
   _HomePageState createState() => _HomePageState();
@@ -42,14 +50,9 @@ class _HomePageState extends State<HomePage> {
           this.dateRange.start.round().abs(),
           this.dateRange.end.round().abs()
         );
-      Set<String> eventIds = Set.from(eventsFromApi.map((event) => event.id));
-
       List<CustomEvent> eventsFromSQLite = await getEventsFromSQLite();
-      List<CustomEvent> locallyAddedEvents = eventsFromSQLite
-        .where((event) => !eventIds.contains(event.id))
-        .toList();
 
-      List<CustomEvent> events = eventsFromApi + locallyAddedEvents;
+      List<CustomEvent> events = eventsFromApi + eventsFromSQLite;
 
       this.sortedEvents = sortEvents(
         events,
@@ -61,8 +64,7 @@ class _HomePageState extends State<HomePage> {
       setState(() {});
     } 
     
-    catch (error) {
-      print(error);  
+    catch (error) {  
       this.sortedEvents = {};
     }
   }
@@ -162,7 +164,9 @@ class _HomePageState extends State<HomePage> {
     List<DateTime> dates;
 
     if(this.sortedEvents != null) {
-      dates = this.sortedEvents.keys.toList();
+      dates = this.sortedEvents.keys
+        .where((key) => this.sortedEvents[key].length > 0)
+        .toList();
       dates.sort();
     }
 
@@ -264,15 +268,18 @@ class _HomePageState extends State<HomePage> {
               
               if(newEvent != null)
                 setState(() {
-                  List<CustomEvent> events = [];
-                  DateTime startResetDate = resetDate(newEvent.start.toLocal());
-
-                  if(this.sortedEvents.containsKey(startResetDate))
-                    events = this.sortedEvents[startResetDate];
-                  
-                  events.add(newEvent);
-                  events.sort((a, b) => a.start.compareTo(b.start));
-                  this.sortedEvents[startResetDate] = events;
+                  Map<DateTime, CustomEvent> eventMap = 
+                    splitEvent(newEvent);
+                    
+                  eventMap.forEach((date, event) {
+                    if(this.sortedEvents.containsKey(date))  
+                      this.sortedEvents[date].add(event);
+                    else
+                      this.sortedEvents[date] = [event];
+                    
+                    this.sortedEvents[date]
+                      .sort((a, b) => a.start.compareTo(b.start));
+                  });
                 });
             }
         )

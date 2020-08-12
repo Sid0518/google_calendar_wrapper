@@ -11,11 +11,13 @@ class CustomEvent {
 
   bool checked;
   bool local;
+
+  bool deleted = false;
   
   /* The comment below tells VSCode to stop crying */
   // ignore: close_sinks
-  StreamController toggleNotifier = StreamController.broadcast();
-  Stream get emitter => this.toggleNotifier.stream;
+  StreamController eventNotifier = StreamController.broadcast();
+  Stream get emitter => this.eventNotifier.stream;
 
   CustomEvent({
     this.summary, this.description, this.colorId,
@@ -79,10 +81,14 @@ class CustomEvent {
     this.local = map['local'] == 1 ? true : false;
   }
 
-  void addToggleListener(Stream notifier) {
+  void addListener(Stream notifier) {
     notifier.listen((event) {
       if(event == 'Toggled with update')
         this.toggle();
+      else if(!this.deleted && event == 'Deleted') {
+        this.deleted = true;
+        this.eventNotifier.add('Deleted');
+      }
     });
   }
 
@@ -112,7 +118,7 @@ class CustomEvent {
       this.checked = queryResult.first['checked'] == 1 ? true : false;
     else
       this.checked = false;
-    this.toggleNotifier.add('Toggled');
+    this.eventNotifier.add('Toggled');
   }
 
   Future<void> addToDatabase() async {
@@ -123,14 +129,27 @@ class CustomEvent {
     );
   }
 
+  Future<void> deleteFromDatabase() async {
+    if(!this.deleted) {
+      await db.delete(
+        'events', 
+        where: 'eventId = ?',
+        whereArgs: [this.id],
+      );
+
+      this.deleted = true;
+      this.eventNotifier.add('Deleted');
+    }
+  }
+
   void toggle() {
     this.checked = !this.checked;
-    this.toggleNotifier.add('Toggled');
+    this.eventNotifier.add('Toggled');
   }
 
   Future<void> toggleWithUpdate() async {
     this.checked = !this.checked;
-    this.toggleNotifier.add('Toggled with update');
+    this.eventNotifier.add('Toggled with update');
 
     await db.update(
       'events',

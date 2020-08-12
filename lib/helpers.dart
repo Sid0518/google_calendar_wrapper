@@ -80,8 +80,6 @@ Future<List<CustomEvent>> getEventsFromCalendarApi(
   DateTime dtmin = resettedDate.subtract(Duration(days: daysBackward)).toUtc();
   DateTime dtmax = resettedDate.add(Duration(days: daysForward)).toUtc();
   
-  // print("$dtmin, $dtmax");
-  
   Events newEvents = await CalendarApi(httpClient)
     .events
     .list(
@@ -97,8 +95,11 @@ Future<List<CustomEvent>> getEventsFromCalendarApi(
 }
 
 Future<List<CustomEvent>> getEventsFromSQLite() async {
-  return db.query('events')
-    .then((response) => 
+  return db.query(
+    'events',
+    where: 'local = ?',
+    whereArgs: [1]  
+  ).then((response) => 
       response.map((item) => 
         CustomEvent.fromMap(item)).toList()
     );
@@ -121,41 +122,51 @@ List<CustomEvent> filterEventsByDate(
     .toList();
 }
 
+Map<DateTime, CustomEvent> splitEvent(CustomEvent event) {
+  DateTime startResetDate = resetDate(event.start.toLocal());
+  DateTime endResetDate = resetDate(event.end.toLocal());
+
+  List<CustomEvent> splitEvents = [];
+  Map<DateTime, CustomEvent> outMap = {};
+  do {
+    CustomEvent eventCopy = CustomEvent.fromCustomEvent(event: event);
+    splitEvents.add(eventCopy);
+    outMap[startResetDate] = eventCopy;
+    
+    startResetDate = startResetDate.add(Duration(days: 1));
+  }
+  while(!endResetDate.isBefore(startResetDate));
+
+  /*
+    Every event spanning multiple days will have a CustomEvent
+    object for each day that it spans
+
+    Toggling the 'checked' attribute of this event from any one
+    of its tiles should toggle it for all the tiles
+    
+    Hence each tile listens for toggle updates from all other
+    tiles, and can then rebuild its EventWidget
+  */
+  for(CustomEvent event in splitEvents)
+    for(CustomEvent other in splitEvents)
+      if(event != other)
+        event.addListener(other.emitter);
+
+  return outMap;
+}
+
 Map<DateTime, List<CustomEvent>> groupEventsByDate(List<CustomEvent> events) {
   Map<DateTime, List<CustomEvent>> outMap = {};
 
   for (CustomEvent event in events) {
-    DateTime startResetDate = resetDate(event.start.toLocal());
-    DateTime endResetDate = resetDate(event.end.toLocal());
-
-    List<CustomEvent> splitEvents = [];
-    do {
-      CustomEvent eventCopy = CustomEvent.fromCustomEvent(event: event);
-      splitEvents.add(eventCopy);
-
-      if(outMap.containsKey(startResetDate))
-        outMap[startResetDate].add(eventCopy);
+    Map<DateTime, CustomEvent> eventMap = splitEvent(event);
+    
+    eventMap.forEach((date, event) {
+      if(outMap.containsKey(date))
+        outMap[date].add(event);
       else
-        outMap[startResetDate] = [eventCopy];
-      
-      startResetDate = startResetDate.add(Duration(days: 1));
-    }
-    while(!endResetDate.isBefore(startResetDate));
-
-    /*
-      Every event spanning multiple days will have a CustomEvent
-      object for each day that it spans
-
-      Toggling the 'checked' attribute of this event from any one
-      of its tiles should toggle it for all the tiles
-      
-      Hence each tile listens for toggle updates from all other
-      tiles, and can then rebuild its EventWidget
-    */
-    for(CustomEvent event in splitEvents)
-      for(CustomEvent other in splitEvents)
-        if(event != other)
-          event.addToggleListener(other.emitter);
+        outMap[date] = [event];
+    });
   }
 
   return outMap;
