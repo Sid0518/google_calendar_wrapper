@@ -86,6 +86,7 @@ Future<List<CustomEvent>> getEventsFromCalendarApi(
     .events
     .list(
       'primary',
+      singleEvents: true,
       timeMin: dtmin,
       timeMax: dtmax,
     );
