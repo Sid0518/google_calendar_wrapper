@@ -7,6 +7,9 @@ import 'package:google_calendar_wrapper/imports.dart';
 class SingleDayEventsView extends StatefulWidget {
   final DateTime date;
   final List<CustomEvent> events;
+  
+  StreamController eventNotifier = StreamController.broadcast();
+  Stream get notifier => this.eventNotifier.stream;
 
   SingleDayEventsView({@required this.date, @required this.events});
 
@@ -20,6 +23,15 @@ class _SingleDayEventsViewState extends State<SingleDayEventsView> {
   void deleteEvent(CustomEvent event) async {
     widget.events.remove(event);
     setState(() {});
+
+    if(widget.events.length == 0)
+      widget.eventNotifier.add('Empty');
+  }
+
+  @override
+  void setState(fn) {
+    if(this.mounted)
+      super.setState(fn);
   }
   
   @override
@@ -72,5 +84,14 @@ class _SingleDayEventsViewState extends State<SingleDayEventsView> {
         ],
       ),
     );
+  }
+
+  @override
+  void dispose() {
+    for(StreamSubscription listener in this.listeners)
+      listener.cancel();
+    this.listeners = [];
+    
+    super.dispose();
   }
 }

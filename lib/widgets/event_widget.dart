@@ -20,6 +20,12 @@ class _EventWidgetState extends State<EventWidget>
   Animation<double> opacity;
 
   @override
+  void setState(fn) {
+    if(this.mounted)
+      super.setState(fn);
+  }
+
+  @override
   void initState() {
     /*
       VERY HACKY:  REPLACE THIS LOGIC AT THE EARLIEST
