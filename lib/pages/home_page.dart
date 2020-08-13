@@ -24,11 +24,11 @@ class _HomePageState extends State<HomePage> {
   final scrollController = ScrollController();
   bool enableGoBack = false;
 
+  DateTime selectedDate;
   RangeValues dateRange = RangeValues(-30, 7);
 
-  Map<DateTime, List<CustomEvent>> sortedEvents;
-
-  DateTime selectedDate;
+  List<SingleDayEventsView> dayViews;
+  List<StreamSubscription> listeners = [];
 
   Future<void> login() async {
     await this.googleSignIn.signIn();
@@ -41,8 +41,13 @@ class _HomePageState extends State<HomePage> {
   Future<void> updateEvents() async {
     try {
       // Nullify sortedEvents and setState, so that progress indicator pops up
-      this.sortedEvents = null;
+      this.dayViews = null;
+      for(StreamSubscription listener in this.listeners)
+        listener.cancel();
+      this.listeners = [];
+
       setState(() {});
+
       List<CustomEvent> eventsFromApi =
         await getEventsFromCalendarApi(
           this.googleSignIn.currentUser, 
@@ -53,19 +58,30 @@ class _HomePageState extends State<HomePage> {
       List<CustomEvent> eventsFromSQLite = await getEventsFromSQLite();
 
       List<CustomEvent> events = eventsFromApi + eventsFromSQLite;
-
-      this.sortedEvents = sortEvents(
+      Map<DateTime, List<CustomEvent>> sortedEvents = sortEvents(
         events,
         this.selectedDate, 
         this.dateRange.start.round().abs(),
         this.dateRange.end.round().abs()
       );
 
+      this.dayViews = [];
+      sortedEvents.forEach((date, events) =>
+        this.dayViews.add(SingleDayEventsView(
+          date: date,
+          events: events,
+        ))
+      );
+
+      this.dayViews.sort((a, b) => a.date.compareTo(b.date));
+      for(SingleDayEventsView dayView in this.dayViews)
+        this.listeners.add(dayView.notifier.listen((_) => setState(() {})));
+
       setState(() {});
     } 
     
     catch (error) {  
-      this.sortedEvents = {};
+      this.dayViews = [];
     }
   }
 
@@ -145,6 +161,12 @@ class _HomePageState extends State<HomePage> {
   }
 
   @override
+  void setState(fn) {
+    if(this.mounted)  
+      super.setState(fn);
+  }
+
+  @override
   void initState() {
     super.initState();
     this.login();
@@ -161,18 +183,11 @@ class _HomePageState extends State<HomePage> {
 
   @override
   Widget build(BuildContext context) {
-    List<DateTime> dates;
-
-    if(this.sortedEvents != null) {
-      dates = this.sortedEvents.keys
-        .where((key) => this.sortedEvents[key].length > 0)
-        .toList();
-      dates.sort();
-    }
+    this.dayViews?.removeWhere((dayView) => dayView.events.length == 0);
 
     return Scaffold(
         appBar: AppBar(
-          title: Text('Calendar Wrapper'),
+          title: Text('${DateFormat('EEEE, MMM d, y').format(this.selectedDate)}:  -${this.dateRange.start.toInt().abs()}  +${this.dateRange.end.toInt().abs()}'),
           actions: [
             IconButton(
                 icon: Icon(Icons.calendar_today),
@@ -187,21 +202,18 @@ class _HomePageState extends State<HomePage> {
         ),
         body: Stack(
           children: <Widget>[
-            dates != null ?
+            this.dayViews != null ?
               RefreshIndicator(
                 onRefresh: this.updateEvents,
 
                 child: ListView.separated(
+                  shrinkWrap: true,
+                  scrollDirection: Axis.vertical,
                   controller: this.scrollController,
 
-                  itemCount: dates.length,
-                  itemBuilder: (context, index) {
-                      DateTime date = dates[index];
-                      return SingleDayEventsView(
-                        date: date,
-                        events: this.sortedEvents[date]
-                      );
-                  },
+                  itemCount: this.dayViews.length,
+                  itemBuilder: (context, index) =>
+                    this.dayViews[index],
                   separatorBuilder: (context, index) =>
                     Divider(height: 8, thickness: 1, indent: 16, endIndent: 16),
                 ),
@@ -268,21 +280,56 @@ class _HomePageState extends State<HomePage> {
               
               if(newEvent != null)
                 setState(() {
-                  Map<DateTime, CustomEvent> eventMap = 
-                    splitEvent(newEvent);
+                  Map<DateTime, List<CustomEvent>> newEvents = 
+                    filterEventsByDate(
+                      splitEvent(newEvent), 
+                      this.selectedDate, 
+                      this.dateRange.start.toInt(), 
+                      this.dateRange.end.toInt(),
+                    );
                     
-                  eventMap.forEach((date, event) {
-                    if(this.sortedEvents.containsKey(date))  
-                      this.sortedEvents[date].add(event);
-                    else
-                      this.sortedEvents[date] = [event];
-                    
-                    this.sortedEvents[date]
-                      .sort((a, b) => a.start.compareTo(b.start));
+                  newEvents.forEach((date, newEvents) {
+                    List<CustomEvent> currentEvents = [];
+                    int index = this.dayViews
+                      .indexWhere((dayView) => dayView.date == date);
+
+                    if(index != -1) {
+                      currentEvents = this.dayViews[index].events;
+
+                      this.dayViews.removeAt(index);
+                      this.listeners[index].cancel();
+                      this.listeners.removeAt(index);
+                    }
+
+                    SingleDayEventsView dayView = 
+                      SingleDayEventsView(
+                        date: date,
+                        events: [...currentEvents, ...newEvents],
+                      );
+
+                    this.dayViews.add(dayView);
+                    this.dayViews.sort((a, b) => a.date.compareTo(b.date));
+
+                    index = this.dayViews.indexOf(dayView);
+                    this.listeners.insert(
+                      index,
+                      dayView.notifier.listen((_) => setState(() {}))
+                    );
+
+                    setState(() {});
                   });
                 });
             }
         )
     );
+  }
+
+  @override
+  void dispose() {
+    for(StreamSubscription listener in this.listeners)
+      listener.cancel();
+    this.listeners = [];
+
+    super.dispose();
   }
 }

@@ -101,12 +101,11 @@ Future<List<CustomEvent>> getEventsFromSQLite() async {
     whereArgs: [1]  
   ).then((response) => 
       response.map((item) => 
-        CustomEvent.fromMap(item)).toList()
-    );
+        CustomEvent.fromMap(item)).toList());
 }
 
-List<CustomEvent> filterEventsByDate(
-  List<CustomEvent> events, 
+Map<DateTime, List<CustomEvent>> filterEventsByDate(
+  Map<DateTime, List<CustomEvent>> events, 
   DateTime selectedDate,
   int daysBackward, 
   int daysForward
@@ -116,22 +115,23 @@ List<CustomEvent> filterEventsByDate(
   DateTime dtmin = resettedDate.subtract(Duration(days: daysBackward)).toUtc();
   DateTime dtmax = resettedDate.add(Duration(days: daysForward)).toUtc();
 
-  return events
-    .where((event) => 
-      !event.start.isBefore(dtmin) && !event.start.isAfter(dtmax))
-    .toList();
+  events.removeWhere(
+    (key, value) => 
+      key.compareTo(dtmin) < 0 || key.compareTo(dtmax) > 0);
+
+  return events;
 }
 
-Map<DateTime, CustomEvent> splitEvent(CustomEvent event) {
+Map<DateTime, List<CustomEvent>> splitEvent(CustomEvent event) {
   DateTime startResetDate = resetDate(event.start.toLocal());
   DateTime endResetDate = resetDate(event.end.toLocal());
 
   List<CustomEvent> splitEvents = [];
-  Map<DateTime, CustomEvent> outMap = {};
+  Map<DateTime, List<CustomEvent>> outMap = {};
   do {
     CustomEvent eventCopy = CustomEvent.fromCustomEvent(event: event);
     splitEvents.add(eventCopy);
-    outMap[startResetDate] = eventCopy;
+    outMap[startResetDate] = [eventCopy];
     
     startResetDate = startResetDate.add(Duration(days: 1));
   }
@@ -159,13 +159,13 @@ Map<DateTime, List<CustomEvent>> groupEventsByDate(List<CustomEvent> events) {
   Map<DateTime, List<CustomEvent>> outMap = {};
 
   for (CustomEvent event in events) {
-    Map<DateTime, CustomEvent> eventMap = splitEvent(event);
+    Map<DateTime, List<CustomEvent>> eventMap = splitEvent(event);
     
     eventMap.forEach((date, event) {
       if(outMap.containsKey(date))
-        outMap[date].add(event);
+        outMap[date].addAll(event);
       else
-        outMap[date] = [event];
+        outMap[date] = event;
     });
   }
 
@@ -179,8 +179,13 @@ Map<DateTime, List<CustomEvent>> sortEvents(
   int daysBackward, 
   int daysForward
 ) {
-  events = filterEventsByDate(events, selectedDate, daysBackward, daysForward);
-  Map<DateTime, List<CustomEvent>> outMap = groupEventsByDate(events);
+  Map<DateTime, List<CustomEvent>> outMap = 
+    filterEventsByDate(
+      groupEventsByDate(events), 
+      selectedDate, 
+      daysBackward, 
+      daysForward
+    );
 
   for (List<CustomEvent> events in outMap.values)
     events.sort((a, b) => a.start.compareTo(b.start));
