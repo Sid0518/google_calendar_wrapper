@@ -5,7 +5,8 @@ class EventWidget extends StatefulWidget {
   final DateTime date;
   final CustomEvent event;
 
-  EventWidget({@required this.date, @required this.event});
+  EventWidget({@required this.date, @required this.event}): 
+    super(key: ValueKey(event.id));
 
   @override
   _EventWidgetState createState() => _EventWidgetState();
@@ -38,7 +39,7 @@ class _EventWidgetState extends State<EventWidget>
     if(this.widget.event.deleted)
       this.widget.event.eventNotifier.add('Deleted');
 
-    this.widget.event.emitter.listen((message) {
+    this.widget.event.notifier.listen((message) {
       if(message == 'Toggled' && this.mounted)
         setState(() {});
     });

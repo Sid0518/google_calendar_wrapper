@@ -18,7 +18,7 @@ class CustomEvent {
   /* The comment below tells VSCode to stop crying */
   // ignore: close_sinks
   StreamController eventNotifier = StreamController.broadcast();
-  Stream get emitter => this.eventNotifier.stream;
+  Stream get notifier => this.eventNotifier.stream;
 
   CustomEvent({
     this.summary, this.description, this.colorId,

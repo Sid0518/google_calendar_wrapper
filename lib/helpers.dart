@@ -152,7 +152,7 @@ Map<DateTime, List<CustomEvent>> splitEvent(CustomEvent event) {
     splitEvents.add(splitEvents[0]);
 
     for(int i = 0;i < n;i++)
-      splitEvents[i].addListener(splitEvents[i + 1].emitter);
+      splitEvents[i].addListener(splitEvents[i + 1].notifier);
   }
   
   return outMap;
