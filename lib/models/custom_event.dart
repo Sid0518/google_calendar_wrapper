@@ -12,6 +12,7 @@ class CustomEvent {
   bool checked;
   bool local;
 
+  bool toggled = false;
   bool deleted = false;
   
   /* The comment below tells VSCode to stop crying */
@@ -82,13 +83,13 @@ class CustomEvent {
   }
 
   void addListener(Stream notifier) {
-    notifier.listen((event) {
-      if(event == 'Toggled with update')
+    notifier.listen((message) {
+      print('Received event');
+      if(message == 'Toggled')
         this.toggle();
-      else if(!this.deleted && event == 'Deleted') {
-        this.deleted = true;
-        this.eventNotifier.add('Deleted');
-      }
+
+      else if(!this.deleted && message == 'Deleted')
+        this.delete();
     });
   }
 
@@ -129,27 +130,23 @@ class CustomEvent {
     );
   }
 
-  Future<void> deleteFromDatabase() async {
-    if(!this.deleted) {
-      await db.delete(
-        'events', 
-        where: 'eventId = ?',
-        whereArgs: [this.id],
-      );
+  void toggle() {
+    if(!this.toggled) {
+      this.checked = !this.checked;
+      this.eventNotifier.add('Toggled');
 
-      this.deleted = true;
-      this.eventNotifier.add('Deleted');
+      this.toggled = true;
+      Future.delayed(Duration(milliseconds: 80), () => this.toggled = false);
     }
   }
 
-  void toggle() {
-    this.checked = !this.checked;
-    this.eventNotifier.add('Toggled');
+  void delete() {
+    this.deleted = true;
+    this.eventNotifier.add('Deleted');
   }
 
   Future<void> toggleWithUpdate() async {
-    this.checked = !this.checked;
-    this.eventNotifier.add('Toggled with update');
+    this.toggle();
 
     await db.update(
       'events',
@@ -157,5 +154,17 @@ class CustomEvent {
       where: 'eventId = ?',
       whereArgs: [this.id],
     );
+  }
+
+  Future<void> deleteFromDatabase() async {
+    if(!this.deleted) {
+      this.delete();
+      
+      await db.delete(
+        'events', 
+        where: 'eventId = ?',
+        whereArgs: [this.id],
+      );
+    }
   }
 }

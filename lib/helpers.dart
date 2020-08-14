@@ -147,11 +147,14 @@ Map<DateTime, List<CustomEvent>> splitEvent(CustomEvent event) {
     Hence each tile listens for toggle updates from all other
     tiles, and can then rebuild its EventWidget
   */
-  for(CustomEvent event in splitEvents)
-    for(CustomEvent other in splitEvents)
-      if(event != other)
-        event.addListener(other.emitter);
+  int n = splitEvents.length;
+  if(n > 1) {
+    splitEvents.add(splitEvents[0]);
 
+    for(int i = 0;i < n;i++)
+      splitEvents[i].addListener(splitEvents[i + 1].emitter);
+  }
+  
   return outMap;
 }
 
