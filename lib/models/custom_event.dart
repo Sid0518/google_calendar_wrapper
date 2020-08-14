@@ -84,7 +84,6 @@ class CustomEvent {
 
   void addListener(Stream notifier) {
     notifier.listen((message) {
-      print('Received event');
       if(message == 'Toggled')
         this.toggle();
 
@@ -159,7 +158,7 @@ class CustomEvent {
   Future<void> deleteFromDatabase() async {
     if(!this.deleted) {
       this.delete();
-      
+
       await db.delete(
         'events', 
         where: 'eventId = ?',

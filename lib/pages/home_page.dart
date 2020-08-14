@@ -22,13 +22,18 @@ class _HomePageState extends State<HomePage> {
   final googleSignIn = GoogleSignIn(scopes: scopes);
 
   final scrollController = ScrollController();
-  bool enableGoBack = false;
+  bool enableGotoTop = false;
 
-  DateTime selectedDate = DateTime.now();
+  DateTime selectedDate = resetDate(DateTime.now());
   RangeValues dateRange = RangeValues(-30, 7);
 
   List<SingleDayEventsView> dayViews;
   List<StreamSubscription> listeners = [];
+
+  final listKey = GlobalKey<AnimatedListState>();
+  final offset = 
+    Tween<Offset>(begin: Offset(-1, 0), end: Offset.zero)
+      .chain(CurveTween(curve: Curves.decelerate));
 
   Future<void> login() async {
     await this.googleSignIn.signIn();
@@ -37,15 +42,69 @@ class _HomePageState extends State<HomePage> {
     await this.updateEvents();
   }
 
+  void _addToAnimatedList(int index) {
+    this.listKey.currentState.insertItem(index);
+  }
+
+  void addDayView(SingleDayEventsView dayView) {
+    if(this.listKey.currentState != null) {
+      this.dayViews.add(dayView);
+      this.dayViews.sort((a, b) => a.date.compareTo(b.date));
+
+      int index = this.dayViews.indexOf(dayView);
+      this.listeners.insert(
+        index,
+        dayView.notifier.listen((_) => this.removeDayView(dayView))
+      );
+
+      this._addToAnimatedList(index);
+    }
+
+    else
+      WidgetsBinding.instance
+        .addPostFrameCallback((_) => this.addDayView(dayView));
+  }
+
+  void _removeFromAnimatedList(int index, SingleDayEventsView dayView) {
+    this.listKey.currentState
+      .removeItem(
+        index, 
+        (context, animation) => 
+          SlideTransition(
+            position: animation.drive(this.offset),
+            child: dayView,
+          )
+      );
+  }
+
+  void removeDayView(SingleDayEventsView dayView) {
+    if(this.listKey.currentState != null) {
+      int index = this.dayViews.indexOf(dayView);
+
+      this.dayViews.removeAt(index);
+      this.listeners[index].cancel();
+      this.listeners.removeAt(index);
+
+      this._removeFromAnimatedList(index, dayView);
+    }
+
+    else
+      WidgetsBinding.instance
+        .addPostFrameCallback((_) => this.removeDayView(dayView));
+  }
+
+  void discardListeners() {
+    for(StreamSubscription listener in this.listeners)
+      listener.cancel();
+    this.listeners = [];
+  }
+
   /// Updates events
   Future<void> updateEvents() async {
     try {
-      // Nullify sortedEvents and setState, so that progress indicator pops up
+      // Nullify dayViews and setState, so that progress indicator pops up
       this.dayViews = null;
-      for(StreamSubscription listener in this.listeners)
-        listener.cancel();
-      this.listeners = [];
-
+      this.discardListeners();
       setState(() {});
 
       List<CustomEvent> eventsFromApi =
@@ -61,24 +120,23 @@ class _HomePageState extends State<HomePage> {
       Map<DateTime, List<CustomEvent>> sortedEvents = sortEvents(
         events,
         this.selectedDate, 
-        this.dateRange.start.round().abs(),
-        this.dateRange.end.round().abs()
+        this.dateRange.start.toInt().abs(),
+        this.dateRange.end.toInt().abs()
       );
 
       this.dayViews = [];
-      sortedEvents.forEach((date, events) =>
-        this.dayViews.add(SingleDayEventsView(
-          date: date,
-          events: events,
-        ))
-      );
-
-      this.dayViews.sort((a, b) => a.date.compareTo(b.date));
-      for(SingleDayEventsView dayView in this.dayViews)
-        this.listeners.add(dayView.notifier.listen((_) => setState(() {})));
-
       setState(() {});
-    } 
+
+      Future staggerer = Future(() {});
+      sortedEvents.forEach(
+        (date, events) => 
+          staggerer = 
+            staggerer.then((_) {
+              this.addDayView(SingleDayEventsView(date: date, events: events));
+              return Future.delayed(Duration(milliseconds: 80));
+            })
+      );
+    }
     
     catch (error) {  
       this.dayViews = [];
@@ -91,7 +149,6 @@ class _HomePageState extends State<HomePage> {
 
     if (newDate != null) {
       this.selectedDate = resetDate(newDate);
-
       await this.updateEvents();
     }
   }
@@ -172,12 +229,11 @@ class _HomePageState extends State<HomePage> {
     this.login();
 
     this.scrollController.addListener(() {
-      if(this.scrollController.offset > 800) {
-        setState(() => this.enableGoBack = true);
-      }
+      if(this.scrollController.offset > 800)
+        setState(() => this.enableGotoTop = true);
 
-      else if(this.enableGoBack)
-        setState(() => this.enableGoBack = false);
+      else if(this.enableGotoTop)
+        setState(() => this.enableGotoTop = false);
     });
   }
 
@@ -200,22 +256,36 @@ class _HomePageState extends State<HomePage> {
             ),
           ],
         ),
+
         body: Stack(
           children: <Widget>[
             this.dayViews != null ?
               RefreshIndicator(
                 onRefresh: this.updateEvents,
 
-                child: ListView.separated(
+                // child: ListView.separated(
+                //   shrinkWrap: true,
+                //   scrollDirection: Axis.vertical,
+                //   controller: this.scrollController,
+
+                //   itemCount: this.dayViews.length,
+                //   itemBuilder: (context, index) =>
+                //     this.dayViews[index],
+                //   separatorBuilder: (context, index) =>
+                //     Divider(height: 8, thickness: 1, indent: 16, endIndent: 16),
+                // ),
+                child: AnimatedList(
+                  key: this.listKey,
                   shrinkWrap: true,
                   scrollDirection: Axis.vertical,
                   controller: this.scrollController,
 
-                  itemCount: this.dayViews.length,
-                  itemBuilder: (context, index) =>
-                    this.dayViews[index],
-                  separatorBuilder: (context, index) =>
-                    Divider(height: 8, thickness: 1, indent: 16, endIndent: 16),
+                  // initialItemCount: this.dayViews.length,
+                  itemBuilder: (context, index, animation) =>
+                    SlideTransition(
+                      position: animation.drive(this.offset),
+                      child: this.dayViews[index]
+                    ),
                 ),
               ) : 
               Center(
@@ -225,7 +295,7 @@ class _HomePageState extends State<HomePage> {
               AnimatedPositioned(
                 duration: Duration(milliseconds: 200),
 
-                top: this.enableGoBack ? 16 : -64,
+                top: this.enableGotoTop ? 16 : -64,
                 right: 16,
 
                 child: Container(
@@ -287,7 +357,6 @@ class _HomePageState extends State<HomePage> {
                       this.dateRange.start.toInt().abs(), 
                       this.dateRange.end.toInt().abs(),
                     );
-                  print(newEvents);
                     
                   newEvents.forEach((date, newEvents) {
                     List<CustomEvent> currentEvents = [];
@@ -307,15 +376,7 @@ class _HomePageState extends State<HomePage> {
                         date: date,
                         events: [...currentEvents, ...newEvents],
                       );
-
-                    this.dayViews.add(dayView);
-                    this.dayViews.sort((a, b) => a.date.compareTo(b.date));
-
-                    index = this.dayViews.indexOf(dayView);
-                    this.listeners.insert(
-                      index,
-                      dayView.notifier.listen((_) => setState(() {}))
-                    );
+                    this.addDayView(dayView);
 
                     setState(() {});
                   });
@@ -327,10 +388,7 @@ class _HomePageState extends State<HomePage> {
 
   @override
   void dispose() {
-    for(StreamSubscription listener in this.listeners)
-      listener.cancel();
-    this.listeners = [];
-
+    this.discardListeners();
     super.dispose();
   }
 }
