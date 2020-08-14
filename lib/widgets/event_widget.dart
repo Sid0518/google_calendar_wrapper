@@ -38,8 +38,8 @@ class _EventWidgetState extends State<EventWidget>
     if(this.widget.event.deleted)
       this.widget.event.eventNotifier.add('Deleted');
 
-    this.widget.event.emitter.listen((event) {
-      if(event == 'Toggled' && this.mounted)
+    this.widget.event.emitter.listen((message) {
+      if(message == 'Toggled' && this.mounted)
         setState(() {});
     });
     super.initState();

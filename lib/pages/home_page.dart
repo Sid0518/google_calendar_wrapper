@@ -24,7 +24,7 @@ class _HomePageState extends State<HomePage> {
   final scrollController = ScrollController();
   bool enableGoBack = false;
 
-  DateTime selectedDate;
+  DateTime selectedDate = DateTime.now();
   RangeValues dateRange = RangeValues(-30, 7);
 
   List<SingleDayEventsView> dayViews;
@@ -284,9 +284,10 @@ class _HomePageState extends State<HomePage> {
                     filterEventsByDate(
                       splitEvent(newEvent), 
                       this.selectedDate, 
-                      this.dateRange.start.toInt(), 
-                      this.dateRange.end.toInt(),
+                      this.dateRange.start.toInt().abs(), 
+                      this.dateRange.end.toInt().abs(),
                     );
+                  print(newEvents);
                     
                   newEvents.forEach((date, newEvents) {
                     List<CustomEvent> currentEvents = [];
