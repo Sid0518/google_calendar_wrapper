@@ -46,23 +46,29 @@ class _HomePageState extends State<HomePage> {
     this.listKey.currentState.insertItem(index);
   }
 
-  void addDayView(SingleDayEventsView dayView) {
+  void addDayView(SingleDayEventsView dayView, {bool animate = true}) {
     if(this.listKey.currentState != null) {
+      print('Adding ${dayView.date.toString()}');
       this.dayViews.add(dayView);
       this.dayViews.sort((a, b) => a.date.compareTo(b.date));
 
       int index = this.dayViews.indexOf(dayView);
       this.listeners.insert(
         index,
-        dayView.notifier.listen((_) => this.removeDayView(dayView))
+        dayView.notifier.listen((_) {
+          print('Received message that ${dayView.date} is empty');
+          this.removeDayView(dayView);
+        })
       );
 
-      this._addToAnimatedList(index);
+      if(animate)
+        this._addToAnimatedList(index);
     }
 
     else
       WidgetsBinding.instance
-        .addPostFrameCallback((_) => this.addDayView(dayView));
+        .addPostFrameCallback(
+          (_) => this.addDayView(dayView, animate: animate));
   }
 
   void _removeFromAnimatedList(int index, SingleDayEventsView dayView) {
@@ -77,20 +83,24 @@ class _HomePageState extends State<HomePage> {
       );
   }
 
-  void removeDayView(SingleDayEventsView dayView) {
+  void removeDayView(SingleDayEventsView dayView, {bool animate = true}) {
     if(this.listKey.currentState != null) {
+      print('Deleting: ${dayView.date.toString()}');
+
       int index = this.dayViews.indexOf(dayView);
 
       this.dayViews.removeAt(index);
       this.listeners[index].cancel();
       this.listeners.removeAt(index);
 
-      this._removeFromAnimatedList(index, dayView);
+      if(animate)
+        this._removeFromAnimatedList(index, dayView);
     }
 
     else
       WidgetsBinding.instance
-        .addPostFrameCallback((_) => this.removeDayView(dayView));
+        .addPostFrameCallback(
+          (_) => this.removeDayView(dayView, animate: animate));
   }
 
   void discardListeners() {
@@ -127,15 +137,19 @@ class _HomePageState extends State<HomePage> {
       this.dayViews = [];
       setState(() {});
 
-      Future staggerer = Future(() {});
       sortedEvents.forEach(
         (date, events) => 
-          staggerer = 
-            staggerer.then((_) {
-              this.addDayView(SingleDayEventsView(date: date, events: events));
-              return Future.delayed(Duration(milliseconds: 80));
-            })
-      );
+          this.addDayView(SingleDayEventsView(date: date, events: events))
+        );
+      
+      Future staggerer = Future(() {});
+      Iterable<int>.generate(this.dayViews.length)
+        .forEach((index) {
+          staggerer = staggerer.then((_) {
+            this._addToAnimatedList(index);
+            return Future.delayed(Duration(milliseconds: 80));
+          });
+        });
     }
     
     catch (error) {  
@@ -243,7 +257,7 @@ class _HomePageState extends State<HomePage> {
 
     return Scaffold(
         appBar: AppBar(
-          title: Text('${DateFormat('EEEE, MMM d, y').format(this.selectedDate)}:  -${this.dateRange.start.toInt().abs()}  +${this.dateRange.end.toInt().abs()}'),
+          title: Text('${DateFormat('E, MMM d, y').format(this.selectedDate)}:  -${this.dateRange.start.toInt().abs()}  +${this.dateRange.end.toInt().abs()}'),
           actions: [
             IconButton(
                 icon: Icon(Icons.calendar_today),
@@ -281,11 +295,18 @@ class _HomePageState extends State<HomePage> {
                   controller: this.scrollController,
 
                   // initialItemCount: this.dayViews.length,
+
+                  /*
+                    TODO: Figure out why sometimes AnimatedList has 
+                    less/more elements than this.dayViews, and then 
+                    remove this ternary hack
+                  */
                   itemBuilder: (context, index, animation) =>
-                    SlideTransition(
-                      position: animation.drive(this.offset),
-                      child: this.dayViews[index]
-                    ),
+                    index < this.dayViews.length ? 
+                      SlideTransition(
+                        position: animation.drive(this.offset),
+                        child: this.dayViews[index]
+                      ) : null,
                 ),
               ) : 
               Center(
@@ -388,7 +409,15 @@ class _HomePageState extends State<HomePage> {
 
   @override
   void dispose() {
+    if(this.listKey.currentState != null) {
+      int index = this.dayViews.length - 1;
+      while(index-- > 0)
+        this.listKey.currentState
+          .removeItem(index, (context, animation) => null);
+    }
+    this.dayViews.clear();
     this.discardListeners();
+
     super.dispose();
   }
 }
