@@ -7,6 +7,14 @@ import 'package:google_calendar_wrapper/imports.dart';
 class SingleDayEventsView extends StatefulWidget {
   final DateTime date;
   List<CustomEvent> events;
+  Function _addEventFromState;
+
+  void addEvent(CustomEvent event) {
+    if(this._addEventFromState != null)
+      this._addEventFromState(event);
+    else
+      this.events.add(event);
+  }
   
   // ignore: close_sinks
   final eventNotifier = StreamController.broadcast();
@@ -39,7 +47,10 @@ class _SingleDayEventsViewState extends State<SingleDayEventsView> {
 
       this.listeners.insert(
         index, 
-        event.notifier.listen((message) => this.removeEvent(event))
+        event.notifier.listen((message) {
+          if(message == 'Deleted')
+            this.removeEvent(event);
+        })
       );
 
       this.listKey.currentState.insertItem(index);
@@ -67,14 +78,17 @@ class _SingleDayEventsViewState extends State<SingleDayEventsView> {
         this.listKey.currentState.removeItem(
           index, 
           (context, animation) => 
-            SlideTransition(
-              position: animation.drive(this.offset),
+            SizeTransition(
+              sizeFactor: animation,
               child: eventWidget,
             )
         );
 
         if(widget.events.length == 0)
-          widget.eventNotifier.add('Empty');
+          Future.delayed(
+            Duration(milliseconds: 200), 
+            () => widget.eventNotifier.add('Empty')
+          );
       }
     }
     else
@@ -90,29 +104,27 @@ class _SingleDayEventsViewState extends State<SingleDayEventsView> {
 
   @override
   void initState() {
-    this.eventWidgets = [];
-
-    List<CustomEvent> events = widget.events;
-    widget.events = [];
-
-    for(CustomEvent event in events)
-      this.addEvent(event);
+    widget._addEventFromState = this.addEvent;
+    
+    this.eventWidgets = 
+      widget.events
+        .map((event) => EventWidget(date: widget.date, event: event))
+        .toList();
+    this.listeners = 
+      this.eventWidgets.map(
+        (eventWidget) => 
+          eventWidget.event.notifier.listen((message) { 
+            if(message == 'Deleted')
+              widget.eventNotifier.add('Empty');
+          }))
+        .toList();
 
     super.initState();
   }
   
   @override
   Widget build(BuildContext context) {
-    for(StreamSubscription listener in this.listeners)
-      listener.cancel();
-
-    for(CustomEvent event in this.widget.events)
-      this.listeners.add(event.notifier.listen(
-        (eventHeard) {
-          if(eventHeard == 'Deleted')
-            this.removeEvent(event);
-        })
-      );
+    print('Build');
 
     return Padding(
       padding: EdgeInsets.all(16),
@@ -155,7 +167,7 @@ class _SingleDayEventsViewState extends State<SingleDayEventsView> {
             scrollDirection: Axis.vertical,
             physics: NeverScrollableScrollPhysics(),
             
-            // initialItemCount: this.eventWidgets.length,
+            initialItemCount: this.eventWidgets.length,
             /*
               TODO: Figure out why sometimes AnimatedList has 
               less/more elements than this.dayViews, and then 

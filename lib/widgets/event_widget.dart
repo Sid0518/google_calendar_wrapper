@@ -15,10 +15,6 @@ class EventWidget extends StatefulWidget {
 class _EventWidgetState extends State<EventWidget>
     with TickerProviderStateMixin {
   bool get checked => this.widget.event.checked;
-  
-  AnimationController controller;
-  Animation<Offset> offset;
-  Animation<double> opacity;
 
   @override
   void setState(fn) {
@@ -44,24 +40,6 @@ class _EventWidgetState extends State<EventWidget>
         setState(() {});
     });
     super.initState();
-
-    this.controller = AnimationController(
-      duration: Duration(milliseconds: 320),
-      vsync: this,
-    );
-    final curvedAnim = CurvedAnimation(
-      curve: Curves.decelerate,
-      parent: this.controller,
-    );
-
-    this.offset = 
-      Tween<Offset>(begin: Offset(-1, 0), end: Offset.zero)
-        .animate(curvedAnim);
-    this.opacity = 
-      Tween<double>(begin: 0.0, end: 1.0)
-        .animate(curvedAnim);
-
-    this.controller.forward();
   }
 
   @override
@@ -113,136 +91,122 @@ class _EventWidgetState extends State<EventWidget>
       duration: Duration(milliseconds: 200),
       curve: Curves.decelerate,
       
-      child: FadeTransition(
-        opacity: this.opacity,
+      child: Container(
+        decoration: BoxDecoration(
+          color: eventColor,
+          borderRadius: BorderRadius.circular(8),
+        ),
+        
+        child: Material(
+          type: MaterialType.transparency,
 
-        child: SlideTransition(
-          position: this.offset,
-          
-          child: Container(
-            decoration: BoxDecoration(
-              color: eventColor,
-              borderRadius: BorderRadius.circular(8),
-            ),
+          child: InkWell(
+            onTap: () async {
+              await widget.event.toggleWithUpdate();
+              setState(() {});
+            },
+            splashColor: Theme.of(context).primaryColor,
             
-            child: Material(
-              type: MaterialType.transparency,
+            child: ConstrainedBox(
+              constraints: BoxConstraints(
+                minHeight: this.checked ? 50 : 100,
+              ),
 
-              child: InkWell(
-                onTap: () async {
-                  await widget.event.toggleWithUpdate();
-                  setState(() {});
-                },
-                splashColor: Theme.of(context).primaryColor,
+              child: Row(
+                crossAxisAlignment: CrossAxisAlignment.center,
+                mainAxisSize: MainAxisSize.max,
                 
-                child: ConstrainedBox(
-                  constraints: BoxConstraints(
-                    minHeight: this.checked ? 50 : 100,
+                children: [
+                  IgnorePointer(
+                    child: Checkbox(
+                      checkColor: eventColor,
+                      activeColor: Colors.white,
+                      
+                      value: this.checked,
+                      onChanged: (bool value) {},
+                    ),
                   ),
 
-                  child: Row(
-                    crossAxisAlignment: CrossAxisAlignment.center,
-                    mainAxisSize: MainAxisSize.max,
+                  Expanded(
+                    flex: 2,
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.center,
+                      children: time,
+                    ),
+                  ),
+
+                  SizedBox(width: 8),
+
+                  Expanded(
+                    flex: widget.event.local ? 5 : 6,
                     
-                    children: [
-                      IgnorePointer(
-                        child: Checkbox(
-                          checkColor: eventColor,
-                          activeColor: Colors.white,
-                          
-                          value: this.checked,
-                          onChanged: (bool value) {},
-                        ),
-                      ),
-
-                      Expanded(
-                        flex: 2,
-                        child: Column(
-                          crossAxisAlignment: CrossAxisAlignment.center,
-                          children: time,
-                        ),
-                      ),
-
-                      SizedBox(width: 8),
-
-                      Expanded(
-                        flex: widget.event.local ? 5 : 6,
+                    child: Padding(
+                      padding: const EdgeInsets.fromLTRB(16, 16, 24, 16),
+                      
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
                         
-                        child: Padding(
-                          padding: const EdgeInsets.fromLTRB(16, 16, 24, 16),
-                          
-                          child: Column(
-                            crossAxisAlignment: CrossAxisAlignment.start,
-                            
+                        children: <Widget>[
+                          Stack(
                             children: <Widget>[
-                              Stack(
-                                children: <Widget>[
-                                  AnimatedPositioned(
-                                    duration: Duration(milliseconds: 200),
-                                    curve: Curves.decelerate,
-                
-                                    child: makeScrollable(
-                                      maxHeight: 32,
-                                      child: Text(
-                                        '${widget.event.summary}',
-                                        // maxLines: 1,
-                                        // overflow: TextOverflow.ellipsis,
-                                        
-                                        style: TextStyle(
-                                            fontSize: 20,
-                                            color: Colors.white,
-                                            decoration: this.checked
-                                                ? TextDecoration.lineThrough
-                                                : TextDecoration.none),
-                                      ),
-                                    ),
-                                  ),
-                                ],
-                              ),
-
-                              if (!this.checked) SizedBox(height: 16),
-                              
-                              if (!this.checked)
-                                makeScrollable(
-                                  maxHeight: 84,
+                              AnimatedPositioned(
+                                duration: Duration(milliseconds: 200),
+                                curve: Curves.decelerate,
+            
+                                child: makeScrollable(
+                                  maxHeight: 32,
                                   child: Text(
-                                    '${widget.event.description}',
-                                    // maxLines: 4,
+                                    '${widget.event.summary}',
+                                    // maxLines: 1,
                                     // overflow: TextOverflow.ellipsis,
                                     
                                     style: TextStyle(
-                                      fontSize: 16,
-                                      color: Colors.white70,
-                                    ),
+                                        fontSize: 20,
+                                        color: Colors.white,
+                                        decoration: this.checked
+                                            ? TextDecoration.lineThrough
+                                            : TextDecoration.none),
                                   ),
                                 ),
+                              ),
                             ],
                           ),
-                        ),
-                      ),
 
-                      if(widget.event.local)
-                        Expanded(
-                          flex: 1,
-                          child: IconButton(
-                            icon: Icon(Icons.delete, color: Colors.white),
-                            onPressed: () => widget.event.deleteFromDatabase(),
-                          ),
-                        )
-                    ],
+                          if (!this.checked) SizedBox(height: 16),
+                          
+                          if (!this.checked)
+                            makeScrollable(
+                              maxHeight: 84,
+                              child: Text(
+                                '${widget.event.description}',
+                                // maxLines: 4,
+                                // overflow: TextOverflow.ellipsis,
+                                
+                                style: TextStyle(
+                                  fontSize: 16,
+                                  color: Colors.white70,
+                                ),
+                              ),
+                            ),
+                        ],
+                      ),
+                    ),
                   ),
-                ),
+
+                  if(widget.event.local)
+                    Expanded(
+                      flex: 1,
+                      child: IconButton(
+                        icon: Icon(Icons.delete, color: Colors.white),
+                        onPressed: () => widget.event.deleteFromDatabase(),
+                      ),
+                    )
+                ],
               ),
             ),
           ),
         ),
       ),
     );
-  }
-
-  @override
-  void dispose() {
-    this.controller.dispose();
-    super.dispose();
   }
 }

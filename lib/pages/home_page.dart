@@ -76,8 +76,8 @@ class _HomePageState extends State<HomePage> {
       .removeItem(
         index, 
         (context, animation) => 
-          SlideTransition(
-            position: animation.drive(this.offset),
+          SizeTransition(
+            sizeFactor: animation,
             child: dayView,
           )
       );
@@ -380,26 +380,20 @@ class _HomePageState extends State<HomePage> {
                     );
                     
                   newEvents.forEach((date, newEvents) {
-                    List<CustomEvent> currentEvents = [];
-                    int index = this.dayViews
-                      .indexWhere((dayView) => dayView.date == date);
-
-                    if(index != -1) {
-                      currentEvents = this.dayViews[index].events;
-
-                      this.dayViews.removeAt(index);
-                      this.listeners[index].cancel();
-                      this.listeners.removeAt(index);
+                    try {
+                    SingleDayEventsView dayView = this.dayViews
+                      .firstWhere((dayView) => dayView.date == date);
+                      
+                      dayView.addEvent(newEvents.first);
                     }
-
-                    SingleDayEventsView dayView = 
-                      SingleDayEventsView(
-                        date: date,
-                        events: [...currentEvents, ...newEvents],
-                      );
-                    this.addDayView(dayView);
-
-                    setState(() {});
+                    catch(error) {
+                      SingleDayEventsView dayView = 
+                        SingleDayEventsView(
+                          date: date,
+                          events: newEvents,
+                        );
+                      this.addDayView(dayView);
+                    }
                   });
                 });
             }
